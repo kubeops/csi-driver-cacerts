@@ -15,4 +15,4 @@ BASE_DIR=$(dirname "$0")
 
 # deploy image plugin and registrar sidecar
 echo "deploying image components"
-kubectl apply -f ${BASE_DIR}/kubernetes-latest
+kubectl apply -f ${BASE_DIR}/kubernetes-1.16
