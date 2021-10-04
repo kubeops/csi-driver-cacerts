@@ -20,7 +20,7 @@ import (
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"golang.org/x/net/context"
 
-	"github.com/kubernetes-csi/drivers/pkg/csi-common"
+	csicommon "github.com/kubernetes-csi/csi-driver-image-populator/pkg/csi-common"
 )
 
 type controllerServer struct {

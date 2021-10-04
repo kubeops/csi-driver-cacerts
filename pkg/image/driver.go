@@ -18,9 +18,9 @@ package image
 
 import (
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/golang/glog"
+	"k8s.io/klog/v2"
 
-	"github.com/kubernetes-csi/drivers/pkg/csi-common"
+	csicommon "github.com/kubernetes-csi/csi-driver-image-populator/pkg/csi-common"
 )
 
 type driver struct {
@@ -39,7 +39,7 @@ var (
 )
 
 func NewDriver(driverName, nodeID, endpoint string) *driver {
-	glog.Infof("Driver: %v version: %v", driverName, version)
+	klog.Infof("Driver: %v version: %v", driverName, version)
 
 	d := &driver{}
 
@@ -57,9 +57,9 @@ func NewDriver(driverName, nodeID, endpoint string) *driver {
 	return d
 }
 
-func NewNodeServer(d *driver) *nodeServer {
+func NewNodeServer(d *csicommon.CSIDriver) *nodeServer {
 	return &nodeServer{
-		DefaultNodeServer: csicommon.NewDefaultNodeServer(d.csiDriver),
+		DefaultNodeServer: csicommon.NewDefaultNodeServer(d),
 	}
 }
 
@@ -74,6 +74,6 @@ func (d *driver) Run() {
 	s.Start(d.endpoint,
 		csicommon.NewDefaultIdentityServer(d.csiDriver),
 		NewControllerServer(d.csiDriver),
-		NewNodeServer(d))
+		NewNodeServer(d.csiDriver))
 	s.Wait()
 }

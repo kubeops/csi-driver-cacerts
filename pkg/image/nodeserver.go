@@ -23,15 +23,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"golang.org/x/net/context"
+	"k8s.io/klog/v2"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"k8s.io/kubernetes/pkg/util/mount"
+	mount "k8s.io/mount-utils"
 
-	"github.com/kubernetes-csi/drivers/pkg/csi-common"
+	csicommon "github.com/kubernetes-csi/csi-driver-image-populator/pkg/csi-common"
 )
 
 const (
@@ -98,7 +98,7 @@ func (ns *nodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 	attrib := req.GetVolumeContext()
 	mountFlags := req.GetVolumeCapability().GetMount().GetMountFlags()
 
-	glog.V(4).Infof("target %v\nfstype %v\ndevice %v\nreadonly %v\nvolumeId %v\nattributes %v\n mountflags %v\n",
+	klog.V(4).Infof("target %v\nfstype %v\ndevice %v\nreadonly %v\nvolumeId %v\nattributes %v\n mountflags %v\n",
 		targetPath, fsType, deviceId, readOnly, volumeId, attrib, mountFlags)
 
 	options := []string{"bind"}
@@ -111,7 +111,7 @@ func (ns *nodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 	output, err := ns.runCmd(args)
 	// FIXME handle failure.
 	provisionRoot := strings.TrimSpace(string(output[:]))
-	glog.V(4).Infof("container mount point at %s\n", provisionRoot)
+	klog.V(4).Infof("container mount point at %s\n", provisionRoot)
 
 	mounter := mount.New("")
 	path := provisionRoot
@@ -139,7 +139,7 @@ func (ns *nodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpu
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	glog.V(4).Infof("image: volume %s/%s has been unmounted.", targetPath, volumeId)
+	klog.V(4).Infof("image: volume %s/%s has been unmounted.", targetPath, volumeId)
 
 	err = ns.unsetupVolume(volumeId)
 	if err != nil {
@@ -157,7 +157,7 @@ func (ns *nodeServer) setupVolume(volumeId string, image string) error {
 	// FIXME handle already deleted.
 	provisionRoot := strings.TrimSpace(string(output[:]))
 	// FIXME remove
-	glog.V(4).Infof("container mount point at %s\n", provisionRoot)
+	klog.V(4).Infof("container mount point at %s\n", provisionRoot)
 	return err
 }
 
@@ -170,7 +170,7 @@ func (ns *nodeServer) unsetupVolume(volumeId string) error {
 	// FIXME handle already deleted.
 	provisionRoot := strings.TrimSpace(string(output[:]))
 	// FIXME remove
-	glog.V(4).Infof("container mount point at %s\n", provisionRoot)
+	klog.V(4).Infof("container mount point at %s\n", provisionRoot)
 	return err
 }
 

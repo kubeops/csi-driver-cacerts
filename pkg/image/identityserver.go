@@ -16,9 +16,7 @@ limitations under the License.
 
 package image
 
-import (
-	"github.com/kubernetes-csi/drivers/pkg/csi-common"
-)
+import csicommon "github.com/kubernetes-csi/csi-driver-image-populator/pkg/csi-common"
 
 type identityServer struct {
 	*csicommon.DefaultIdentityServer

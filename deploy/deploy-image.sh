@@ -5,7 +5,7 @@
 # authoritative and all updates for this process should be
 # done here and referenced elsewhere.
 
-# The script assumes that kubectl is available on the OS path 
+# The script assumes that kubectl is available on the OS path
 # where it is executed.
 
 set -e

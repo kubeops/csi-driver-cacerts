@@ -21,6 +21,7 @@ import (
 	"os"
 
 	"github.com/kubernetes-csi/csi-driver-image-populator/pkg/image"
+	"k8s.io/klog/v2"
 )
 
 func init() {
@@ -34,6 +35,7 @@ var (
 )
 
 func main() {
+	klog.InitFlags(nil)
 	flag.Parse()
 
 	handle()
