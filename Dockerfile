@@ -7,6 +7,6 @@ RUN \
   yum install -y buildah && \
   yum clean all
 
-COPY ./bin/imagepopulatorplugin /imagepopulatorplugin
-ENTRYPOINT ["/imagepopulatorplugin"]
+COPY ./bin/cacertificatescsidriver /cacertificatescsidriver
+ENTRYPOINT ["/cacertificatescsidriver"]
 

@@ -17,10 +17,10 @@ limitations under the License.
 package image
 
 import (
+	csicommon "kubeops.dev/csi-driver-ca-certificates/pkg/csi-common"
+
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"golang.org/x/net/context"
-
-	csicommon "github.com/kubernetes-csi/csi-driver-image-populator/pkg/csi-common"
 )
 
 type controllerServer struct {

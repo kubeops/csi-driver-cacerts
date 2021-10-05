@@ -20,7 +20,8 @@ import (
 	"flag"
 	"os"
 
-	"github.com/kubernetes-csi/csi-driver-image-populator/pkg/image"
+	"kubeops.dev/csi-driver-ca-certificates/pkg/image"
+
 	"k8s.io/klog/v2"
 )
 

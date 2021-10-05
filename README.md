@@ -1,4 +1,4 @@
-# csi-driver-image-populator
+# csi-driver-ca-certificates
 
 CSI driver that uses a container image as a volume.
 

@@ -23,15 +23,14 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/net/context"
-	"k8s.io/klog/v2"
+	csicommon "kubeops.dev/csi-driver-ca-certificates/pkg/csi-common"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"k8s.io/klog/v2"
 	mount "k8s.io/mount-utils"
-
-	csicommon "github.com/kubernetes-csi/csi-driver-image-populator/pkg/csi-common"
 )
 
 const (

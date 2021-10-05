@@ -1,4 +1,4 @@
-module github.com/kubernetes-csi/csi-driver-image-populator
+module kubeops.dev/csi-driver-ca-certificates
 
 go 1.17
 
