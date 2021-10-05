@@ -1,7 +1,7 @@
 apiVersion: storage.k8s.io/v1
 kind: CSIDriver
 metadata:
-  name: image.csi.k8s.io
+  name: cacerts.csi.appscode.com
 spec:
   attachRequired: false
   podInfoOnMount: false

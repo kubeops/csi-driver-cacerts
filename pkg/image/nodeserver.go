@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -30,6 +31,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"k8s.io/klog/v2"
+	"gomodules.xyz/x/ioutil"
 	mount "k8s.io/mount-utils"
 )
 
@@ -62,11 +64,12 @@ func (ns *nodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 	}
 
 	image := req.GetVolumeContext()["image"]
+	fmt.Println(image) // secret and ca cert names
 
-	err := ns.setupVolume(req.GetVolumeId(), image)
-	if err != nil {
-		return nil, err
-	}
+	//err := ns.setupVolume(req.GetVolumeId(), image)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	targetPath := req.GetTargetPath()
 	notMnt, err := mount.New("").IsLikelyNotMountPoint(targetPath)
@@ -100,23 +103,38 @@ func (ns *nodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 	klog.V(4).Infof("target %v\nfstype %v\ndevice %v\nreadonly %v\nvolumeId %v\nattributes %v\n mountflags %v\n",
 		targetPath, fsType, deviceId, readOnly, volumeId, attrib, mountFlags)
 
-	options := []string{"bind"}
-	if readOnly {
-		options = append(options, "ro")
-	}
+	/*
+	/etc/ssl/certs/java/cacerts
+	/etc/ssl/certs/ca-certificates.crt
+	*/
 
-	args := []string{"mount", volumeId}
-	ns.execPath = "/bin/buildah" // FIXME
-	output, err := ns.runCmd(args)
-	// FIXME handle failure.
-	provisionRoot := strings.TrimSpace(string(output[:]))
-	klog.V(4).Infof("container mount point at %s\n", provisionRoot)
-
-	mounter := mount.New("")
-	path := provisionRoot
-	if err := mounter.Mount(path, targetPath, "", options); err != nil {
+	if err = os.MkdirAll(filepath.Join(targetPath, "java"), 0755); err != nil {
 		return nil, err
 	}
+	if err = ioutil.CopyFile(filepath.Join(targetPath, "ca-certificates.crt"), "/etc/ssl/certs/ca-certificates.crt"); err != nil {
+		return nil, err
+	}
+	if err = ioutil.CopyFile(filepath.Join(targetPath, "java/cacerts"), "/etc/ssl/certs/java/cacerts"); err != nil {
+		return nil, err
+	}
+
+	//options := []string{"bind"}
+	//if readOnly {
+	//	options = append(options, "ro")
+	//}
+	//
+	//args := []string{"mount", volumeId}
+	//ns.execPath = "/bin/buildah" // FIXME
+	//output, err := ns.runCmd(args)
+	//// FIXME handle failure.
+	//provisionRoot := strings.TrimSpace(string(output[:]))
+	//klog.V(4).Infof("container mount point at %s\n", provisionRoot)
+	//
+	//mounter := mount.New("")
+	//path := provisionRoot
+	//if err := mounter.Mount(path, targetPath, "", options); err != nil {
+	//	return nil, err
+	//}
 
 	return &csi.NodePublishVolumeResponse{}, nil
 }
@@ -133,17 +151,19 @@ func (ns *nodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpu
 	targetPath := req.GetTargetPath()
 	volumeId := req.GetVolumeId()
 
+	err := os.RemoveAll(req.GetTargetPath())
+
 	// Unmounting the image
-	err := mount.New("").Unmount(req.GetTargetPath())
+	// err := mount.New("").Unmount(req.GetTargetPath())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	klog.V(4).Infof("image: volume %s/%s has been unmounted.", targetPath, volumeId)
 
-	err = ns.unsetupVolume(volumeId)
-	if err != nil {
-		return nil, err
-	}
+	//err = ns.unsetupVolume(volumeId)
+	//if err != nil {
+	//	return nil, err
+	//}
 	return &csi.NodeUnpublishVolumeResponse{}, nil
 }
 

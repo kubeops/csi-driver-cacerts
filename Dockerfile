@@ -1,12 +1,8 @@
-FROM centos:centos7
-LABEL maintainers="Kubernetes Authors"
-LABEL description="Image Driver"
+FROM gcr.io/distroless/java AS java
 
-RUN \
-  yum install -y epel-release && \
-  yum install -y buildah && \
-  yum clean all
+FROM gcr.io/distroless/static-debian10
+
+COPY --from=java /etc/ssl/certs/java/cacerts /etc/ssl/certs/java/cacerts
 
 COPY ./bin/cacertificatescsidriver /cacertificatescsidriver
 ENTRYPOINT ["/cacertificatescsidriver"]
-

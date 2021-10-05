@@ -4,6 +4,9 @@ github.com/container-storage-interface/spec/lib/go/csi
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
+# github.com/fsnotify/fsnotify v1.4.9
+## explicit; go 1.13
+github.com/fsnotify/fsnotify
 # github.com/go-logr/logr v0.4.0
 ## explicit; go 1.14
 github.com/go-logr/logr
@@ -45,6 +48,12 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
+# gomodules.xyz/sets v0.2.0
+## explicit; go 1.14
+gomodules.xyz/sets
+# gomodules.xyz/x v0.0.8
+## explicit; go 1.12
+gomodules.xyz/x/ioutil
 # google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c
 ## explicit; go 1.11
 google.golang.org/genproto/googleapis/rpc/status

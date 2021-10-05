@@ -5,16 +5,19 @@ metadata:
 spec:
   containers:
   - name: main
-    image: nginx
+    image: busybox
+    command:
+    - sleep
+    - "3600"
     volumeMounts:
-    - name: data
-      mountPath: /var/www/html
+    - name: cacerts
+      mountPath: /etc/ssl/certs
   volumes:
-  - name: data
+  - name: cacerts
     csi:
-      driver: image.csi.k8s.io
+      driver: cacerts.csi.appscode.com
       volumeAttributes:
-        # Specify your image here. busybox used just as a placeholder, not
-        # because its a good idea. See the container folder for a better
-        # example.
-        image: busybox
+        # Specify your custom ca certificates here.
+        # secrets: ns/s1,ns/s2
+        # issuers: ns/i1,ns/i2
+        # clusterIssuers: c1,c2
