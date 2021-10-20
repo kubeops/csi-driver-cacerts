@@ -1,4 +1,4 @@
-# csi-driver-ca-certificates
+# csi-driver-cacerts
 
 CSI driver that uses a container image as a volume.
 
@@ -55,7 +55,7 @@ spec:
   volumes:
   - name: data
     csi:
-      driver: cacerts.csi.appscode.com
+      driver: cacerts.csi.cert-manager.io
       volumeAttributes:
           image: kfox1111/misc:test
 ```

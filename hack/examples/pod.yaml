@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cacerts-test
+  namespace: demo
+spec:
+  containers:
+  - name: main
+    image: curlimages/curl
+    command:
+    - sleep
+    - "3600"
+    volumeMounts:
+    - name: cacerts
+      mountPath: /etc/ssl/certs
+    - name: cacerts2
+      mountPath: /tmp/certs
+  volumes:
+  - name: cacerts
+    csi:
+      driver: cacerts.csi.cert-manager.io
+      readOnly: true
+      volumeAttributes:
+        caProviderClasses: ns/n1,n2
+        # caProviders: ns/n1,n2
+  - name: cacerts2
+    csi:
+      driver: cacerts.csi.cert-manager.io
+      readOnly: true
+      volumeAttributes:
+        caProviderClasses: ns/n1,n2
+        # caProviders: ns/n1,n2
