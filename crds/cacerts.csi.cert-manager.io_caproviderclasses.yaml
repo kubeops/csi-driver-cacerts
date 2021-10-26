@@ -8,9 +8,14 @@ metadata:
 spec:
   group: cacerts.csi.cert-manager.io
   names:
+    categories:
+    - appscode
+    - all
     kind: CAProviderClass
     listKind: CAProviderClassList
     plural: caproviderclasses
+    shortNames:
+    - cap
     singular: caproviderclass
   scope: Namespaced
   versions:
@@ -64,9 +69,6 @@ spec:
                     namespace:
                       description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
                       type: string
-                    optional:
-                      description: Specify whether the Secret or its key must be defined
-                      type: boolean
                   required:
                   - kind
                   - name

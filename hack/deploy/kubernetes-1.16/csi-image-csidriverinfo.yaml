@@ -11,3 +11,4 @@ spec:
   # requiresRepublish: true
   volumeLifecycleModes:
   - Ephemeral
+  fsGroupPolicy: File

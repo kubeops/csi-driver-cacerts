@@ -22,12 +22,11 @@ import (
 
 	//+kubebuilder:scaffold:imports
 
-	cacertsv1alpha1 "kubeops.dev/csi-driver-cacerts/apis/cacerts/v1alpha1"
+	api "kubeops.dev/csi-driver-cacerts/apis/cacerts/v1alpha1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
@@ -38,7 +37,7 @@ import (
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
-var cfg *rest.Config
+// var cfg *rest.Config
 var k8sClient client.Client
 var testEnv *envtest.Environment
 
@@ -63,7 +62,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	err = cacertsv1alpha1.AddToScheme(scheme.Scheme)
+	err = api.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme

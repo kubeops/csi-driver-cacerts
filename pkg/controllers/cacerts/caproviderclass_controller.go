@@ -19,9 +19,9 @@ package cacerts
 import (
 	"context"
 
-	cacertsv1alpha1 "kubeops.dev/csi-driver-cacerts/apis/cacerts/v1alpha1"
+	api "kubeops.dev/csi-driver-cacerts/apis/cacerts/v1alpha1"
 
-	certmanagerv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -60,7 +60,7 @@ func (r *CAProviderClassReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 func (r *CAProviderClassReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	mf := func(gk schema.GroupKind) handler.MapFunc {
 		return func(a client.Object) []reconcile.Request {
-			providers := &cacertsv1alpha1.CAProviderClassList{}
+			providers := &api.CAProviderClassList{}
 			if err := r.List(context.Background(), providers); err != nil {
 				return nil
 			}
@@ -97,10 +97,10 @@ func (r *CAProviderClassReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&cacertsv1alpha1.CAProviderClass{}).
+		For(&api.CAProviderClass{}).
 		Watches(&source.Kind{Type: &core.Secret{}}, handler.EnqueueRequestsFromMapFunc(mf(schema.GroupKind{Group: "", Kind: "Secret"}))).
-		Watches(&source.Kind{Type: &certmanagerv1.Certificate{}}, handler.EnqueueRequestsFromMapFunc(mf(schema.GroupKind{Group: certmanagerv1.SchemeGroupVersion.Group, Kind: "Certificate"}))).
-		Watches(&source.Kind{Type: &certmanagerv1.Issuer{}}, handler.EnqueueRequestsFromMapFunc(mf(schema.GroupKind{Group: certmanagerv1.SchemeGroupVersion.Group, Kind: "Issuer"}))).
-		Watches(&source.Kind{Type: &certmanagerv1.ClusterIssuer{}}, handler.EnqueueRequestsFromMapFunc(mf(schema.GroupKind{Group: certmanagerv1.SchemeGroupVersion.Group, Kind: "ClusterIssuer"}))).
+		Watches(&source.Kind{Type: &cmapi.Certificate{}}, handler.EnqueueRequestsFromMapFunc(mf(schema.GroupKind{Group: cmapi.SchemeGroupVersion.Group, Kind: "Certificate"}))).
+		Watches(&source.Kind{Type: &cmapi.Issuer{}}, handler.EnqueueRequestsFromMapFunc(mf(schema.GroupKind{Group: cmapi.SchemeGroupVersion.Group, Kind: "Issuer"}))).
+		Watches(&source.Kind{Type: &cmapi.ClusterIssuer{}}, handler.EnqueueRequestsFromMapFunc(mf(schema.GroupKind{Group: cmapi.SchemeGroupVersion.Group, Kind: "ClusterIssuer"}))).
 		Complete(r)
 }

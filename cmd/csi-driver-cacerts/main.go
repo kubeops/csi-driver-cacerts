@@ -20,30 +20,77 @@ import (
 	"flag"
 	"os"
 
+	api "kubeops.dev/csi-driver-cacerts/apis/cacerts/v1alpha1"
+	cacertscontrollers "kubeops.dev/csi-driver-cacerts/pkg/controllers/cacerts"
 	"kubeops.dev/csi-driver-cacerts/pkg/driver"
 
+	cmscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
+	"k8s.io/apimachinery/pkg/runtime"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/v2"
+	"k8s.io/klog/v2/klogr"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
-
-func init() {
-	flag.Set("logtostderr", "true")
-}
 
 var (
 	endpoint   = flag.String("endpoint", "unix://tmp/csi.sock", "CSI endpoint")
 	driverName = flag.String("drivername", "cacerts.csi.cert-manager.io", "name of the driver")
 	nodeID     = flag.String("nodeid", "", "node id")
+
+	scheme      = runtime.NewScheme()
+	setupLog    = ctrl.Log.WithName("setup")
+	metricsAddr = flag.String("metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
+	qps         = flag.Float64("qps", 100, "The maximum QPS to the master from this client")
+	burst       = flag.Int("burst", 100, "The maximum burst for throttle")
 )
+
+func init() {
+	_ = flag.Set("logtostderr", "true")
+
+	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+	utilruntime.Must(cmscheme.AddToScheme(scheme))
+	utilruntime.Must(api.AddToScheme(scheme))
+}
 
 func main() {
 	klog.InitFlags(nil)
 	flag.Parse()
 
-	handle()
-	os.Exit(0)
-}
+	ctrl.SetLogger(klogr.New())
 
-func handle() {
+	cfg := ctrl.GetConfigOrDie()
+	cfg.QPS = float32(*qps)
+	cfg.Burst = *burst
+	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
+		Scheme:                 scheme,
+		MetricsBindAddress:     *metricsAddr,
+		Port:                   9443,
+		HealthProbeBindAddress: "", // csi driver runs its own probe sidecar
+		LeaderElection:         false,
+		LeaderElectionID:       "4ab6f271.cacerts.csi.cert-manager.io",
+	})
+	if err != nil {
+		setupLog.Error(err, "unable to start manager")
+		os.Exit(1)
+	}
+
+	if err = (&cacertscontrollers.CAProviderClassReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "CAProviderClass")
+		os.Exit(1)
+	}
+	//+kubebuilder:scaffold:builder
+
+	setupLog.Info("starting driver")
 	d := driver.NewDriver(*driverName, *nodeID, *endpoint)
-	d.Run()
+	d.Run(mgr)
+
+	setupLog.Info("starting manager")
+	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+		setupLog.Error(err, "problem running manager")
+		os.Exit(1)
+	}
 }

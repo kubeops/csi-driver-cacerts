@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo
+
+---
+
+apiVersion: cacerts.csi.cert-manager.io/v1alpha1
+kind: CAProviderClass
+metadata:
+  name: ca-provider
+  namespace: demo
+spec:
+  refs:
+  - apiGroup: cert-manager.io
+    kind: Issuer
+    # namespace:
+    name: ca-issuer
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: curl-rockylinux
+  namespace: demo
+spec:
+  containers:
+  - name: main
+    image: rockylinux/rockylinux
+    command:
+    - sleep
+    - "3600"
+    volumeMounts:
+    - name: cacerts
+      mountPath: /etc/pki/ca-trust/extracted
+  volumes:
+  - name: cacerts
+    csi:
+      driver: cacerts.csi.cert-manager.io
+      readOnly: true
+      volumeAttributes:
+        os: rockylinux
+        caProviderClasses: ca-provider

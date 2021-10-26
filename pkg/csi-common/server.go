@@ -49,12 +49,9 @@ type nonBlockingGRPCServer struct {
 }
 
 func (s *nonBlockingGRPCServer) Start(endpoint string, ids csi.IdentityServer, cs csi.ControllerServer, ns csi.NodeServer) {
-
 	s.wg.Add(1)
 
 	go s.serve(endpoint, ids, cs, ns)
-
-	return
 }
 
 func (s *nonBlockingGRPCServer) Wait() {
@@ -70,7 +67,6 @@ func (s *nonBlockingGRPCServer) ForceStop() {
 }
 
 func (s *nonBlockingGRPCServer) serve(endpoint string, ids csi.IdentityServer, cs csi.ControllerServer, ns csi.NodeServer) {
-
 	proto, addr, err := ParseEndpoint(endpoint)
 	if err != nil {
 		klog.Fatal(err.Error())
@@ -106,6 +102,8 @@ func (s *nonBlockingGRPCServer) serve(endpoint string, ids csi.IdentityServer, c
 
 	klog.Infof("Listening for connections on address: %#v", listener.Addr())
 
-	server.Serve(listener)
-
+	err = server.Serve(listener)
+	if err != nil {
+		klog.Fatalf("Failed to serve: %v", err)
+	}
 }

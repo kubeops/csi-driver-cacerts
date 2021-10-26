@@ -61,7 +61,7 @@ BIN_PLATFORMS    := $(DOCKER_PLATFORMS)
 OS   := $(if $(GOOS),$(GOOS),$(shell go env GOOS))
 ARCH := $(if $(GOARCH),$(GOARCH),$(shell go env GOARCH))
 
-BASEIMAGE_PROD   ?= gcr.io/distroless/static-debian10
+BASEIMAGE_PROD   ?= gcr.io/distroless/static-debian11
 BASEIMAGE_DBG    ?= debian:bullseye
 
 IMAGE            := $(REGISTRY)/$(BIN)
@@ -318,7 +318,7 @@ bin/.container-$(DOTFILE_IMAGE)-%: bin/$(OS)_$(ARCH)/$(BIN) $(DOCKERFILE_%)
 	@docker images -q $(IMAGE):$(TAG_$*) > $@
 	@echo
 
-push: bin/.push-$(DOTFILE_IMAGE)-PROD bin/.push-$(DOTFILE_IMAGE)-DBG
+push: bin/.push-$(DOTFILE_IMAGE)-PROD # bin/.push-$(DOTFILE_IMAGE)-DBG
 bin/.push-$(DOTFILE_IMAGE)-%: bin/.container-$(DOTFILE_IMAGE)-%
 	@docker push $(IMAGE):$(TAG_$*)
 	@echo "pushed: $(IMAGE):$(TAG_$*)"
@@ -500,7 +500,7 @@ check-license:
 		ltag -t "./hack/license" --excludes "vendor contrib" --check -v
 
 .PHONY: ci
-ci: check-license lint build unit-tests #cover verify
+ci: check-license lint build #unit-tests cover verify
 
 .PHONY: qa
 qa:

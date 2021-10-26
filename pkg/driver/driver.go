@@ -21,17 +21,12 @@ import (
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"k8s.io/klog/v2"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 type driver struct {
 	csiDriver *csicommon.CSIDriver
 	endpoint  string
-
-	ids *csicommon.DefaultIdentityServer
-	ns  *nodeServer
-
-	cap   []*csi.VolumeCapability_AccessMode
-	cscap []*csi.ControllerServiceCapability
 }
 
 var (
@@ -58,23 +53,19 @@ func NewDriver(driverName, nodeID, endpoint string) *driver {
 	return d
 }
 
-func NewNodeServer(d *csicommon.CSIDriver) *nodeServer {
+func NewNodeServer(d *csicommon.CSIDriver, mgr ctrl.Manager) *nodeServer {
 	return &nodeServer{
 		DefaultNodeServer: csicommon.NewDefaultNodeServer(d),
+		mgr:               mgr,
 	}
 }
 
-func NewControllerServer(d *csicommon.CSIDriver) *controllerServer {
-	return &controllerServer{
-		DefaultControllerServer: csicommon.NewDefaultControllerServer(d),
-	}
-}
-
-func (d *driver) Run() {
+func (d *driver) Run(mgr ctrl.Manager) {
 	s := csicommon.NewNonBlockingGRPCServer()
 	s.Start(d.endpoint,
 		csicommon.NewDefaultIdentityServer(d.csiDriver),
-		NewControllerServer(d.csiDriver),
-		NewNodeServer(d.csiDriver))
-	s.Wait()
+		csicommon.NewDefaultControllerServer(d.csiDriver),
+		NewNodeServer(d.csiDriver, mgr))
+	// FIX(tamal): Don't wait because we need to start the controller
+	// s.Wait()
 }

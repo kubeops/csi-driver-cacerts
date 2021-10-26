@@ -20,6 +20,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	ResourceKindCAProviderClass = "CAProviderClass"
+	ResourceCAProviderClass     = "caproviderclass"
+	ResourceCAProviderClasses   = "caproviderclasses"
+)
+
 // CAProviderClassSpec defines the desired state of CAProviderClass
 type CAProviderClassSpec struct {
 	// Selects secrets, issuers, cluster issuers, certificates or external issuers
@@ -36,8 +42,9 @@ type CAProviderClassStatus struct {
 // +genclient
 // +k8s:openapi-gen=true
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
+// +kubebuilder:object:root=true
+// +kubebuilder:resource:path=caproviderclasses,singular=caproviderclass,shortName=cap,categories={appscode,all}
+// +kubebuilder:subresource:status
 type CAProviderClass struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -75,7 +82,4 @@ type TypedObjectReference struct {
 	// The key of the secret to select from.  Must be a valid secret key.
 	// +optional
 	Key string `json:"key,omitempty"`
-	// Specify whether the Secret or its key must be defined
-	// +optional
-	Optional *bool `json:"optional,omitempty"`
 }
