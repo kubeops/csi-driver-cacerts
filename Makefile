@@ -318,7 +318,7 @@ bin/.container-$(DOTFILE_IMAGE)-%: bin/$(OS)_$(ARCH)/$(BIN) $(DOCKERFILE_%)
 	@docker images -q $(IMAGE):$(TAG_$*) > $@
 	@echo
 
-push: bin/.push-$(DOTFILE_IMAGE)-PROD # bin/.push-$(DOTFILE_IMAGE)-DBG
+push: bin/.push-$(DOTFILE_IMAGE)-PROD bin/.push-$(DOTFILE_IMAGE)-DBG
 bin/.push-$(DOTFILE_IMAGE)-%: bin/.container-$(DOTFILE_IMAGE)-%
 	@docker push $(IMAGE):$(TAG_$*)
 	@echo "pushed: $(IMAGE):$(TAG_$*)"

@@ -1,6 +1,6 @@
 # csi-driver-cacerts
 
-CSI driver that add ca certificates to a the OS trusted certificate issuers (eg, /etc/ssl/certs/ca-certificates.crt, /etc/ssl/certs/java/cacerts) so that users don't need to pass ca certificates to individual applications or use insecure mode (eg, curl -k).
+CSI driver that add ca certificates to a the OS trusted certificate issuers (eg, `/etc/ssl/certs/ca-certificates.crt`, `/etc/ssl/certs/java/cacerts`) so that users don't need to pass ca certificates to individual applications or use insecure mode (eg, `curl -k`).
 
 ## Example
 
@@ -30,19 +30,17 @@ spec:
         caProviderClasses: ca-provider
 ```
 
-## OS Distro Support
+## OS Distribution Support
 
 Different OS uses different files for trusted ca certificates. This driver has been tested against the following Linux distributions.
 
 - alpine
-- centos6
-- centos7
-- centos8
+- centos (8, 7)
+- centos-6
 - debian
 - fedora
 - opensuse
-- oraclelinux8
-- oraclelinux7
-- oraclelinux6
+- oraclelinux (8, 7)
+- oraclelinux-6
 - rockylinux
 - ubuntu
