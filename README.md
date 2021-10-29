@@ -1,66 +1,48 @@
 # csi-driver-cacerts
 
-CSI driver that uses a container image as a volume.
+CSI driver that add ca certificates to a the OS trusted certificate issuers (eg, /etc/ssl/certs/ca-certificates.crt, /etc/ssl/certs/java/cacerts) so that users don't need to pass ca certificates to individual applications or use insecure mode (eg, curl -k).
 
-## Community, discussion, contribution, and support
+## Example
 
-Learn how to engage with the Kubernetes community on the [community page](http://kubernetes.io/community/).
-
-You can reach the maintainers of this project at:
-
-- [Slack](https://kubernetes.slack.com/messages/sig-storage)
-- [Mailing List](https://groups.google.com/forum/#!forum/kubernetes-sig-storage)
-
-### Code of conduct
-
-Participation in the Kubernetes community is governed by the [Kubernetes Code of Conduct](code-of-conduct.md).
-
-## How it works:
-
-Currently the driver makes use of buildah to download the container image if it is not already available, launch a new instance of it named after the volumeHandle, and mount it.
-
-In the future, integration with CRI would be desirable so the driver could ask via CRI that the Container Runtime perform these activities in a generic way.
-
-## Usage:
-
-**This is a prototype driver. Do not use for production**
-
-It also requires features that are still in development.
-
-### Build imageplugin
-```
-$ make image
-```
-
-### Installing into Kubernetes
-```
-deploy/deploy-image.sh
-```
-
-### Example Usage in Kubernetes
-```
+```yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: nginx
+  name: curl-debian
+  namespace: demo
 spec:
   containers:
-  - name: nginx
-    image: nginx:1.13-alpine
-    ports:
-    - containerPort: 80
-    volumeMount:
-    - name: data
-      mountPath: /usr/share/nginx/html
+  - name: main
+    image: appscode/curl:debian
+    command:
+    - sleep
+    - "3600"
+    volumeMounts:
+    - name: cacerts
+      mountPath: /etc/ssl/certs
   volumes:
-  - name: data
+  - name: cacerts
     csi:
       driver: cacerts.csi.cert-manager.io
+      readOnly: true
       volumeAttributes:
-          image: kfox1111/misc:test
+        os: debian
+        caProviderClasses: ca-provider
 ```
 
-### Start Image driver manually
-```
-$ sudo ./bin/imageplugin --endpoint tcp://127.0.0.1:10000 --nodeid CSINode -v=5
-```
+## OS Distro Support
+
+Different OS uses different files for trusted ca certificates. This driver has been tested against the following Linux distributions.
+
+- alpine
+- centos6
+- centos7
+- centos8
+- debian
+- fedora
+- opensuse
+- oraclelinux8
+- oraclelinux7
+- oraclelinux6
+- rockylinux
+- ubuntu
