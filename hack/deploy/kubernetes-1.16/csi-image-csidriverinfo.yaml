@@ -1,0 +1,14 @@
+apiVersion: storage.k8s.io/v1
+kind: CSIDriver
+metadata:
+  name: cacerts.csi.cert-manager.io
+spec:
+  attachRequired: false
+  # need pod namespace
+  podInfoOnMount: true
+  # https://github.com/kubernetes/enhancements/blob/master/keps/sig-storage/1855-csi-driver-service-account-token/README.md#api-changes
+  # reconcilerLoopSleepPeriod: 0.1s
+  # requiresRepublish: true
+  volumeLifecycleModes:
+  - Ephemeral
+  fsGroupPolicy: File

@@ -1,0 +1,17 @@
+domain: csi.cert-manager.io
+layout:
+- go.kubebuilder.io/v3
+multigroup: true
+projectName: csi-driver-cacerts
+repo: kubeops.dev/csi-driver-cacerts
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: csi.cert-manager.io
+  group: cacerts
+  kind: CAProviderClass
+  path: kubeops.dev/csi-driver-cacerts/apis/cacerts/v1alpha1
+  version: v1alpha1
+version: "3"
