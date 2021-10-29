@@ -54,7 +54,7 @@ endif
 SRC_PKGS := apis client cmd crds pkg # directories which hold app source excluding tests (not vendored)
 SRC_DIRS := $(SRC_PKGS) # directories which hold app source (not vendored)
 
-DOCKER_PLATFORMS := linux/amd64 linux/arm linux/arm64
+DOCKER_PLATFORMS := linux/amd64 linux/arm64
 BIN_PLATFORMS    := $(DOCKER_PLATFORMS)
 
 # Used internally.  Users should pass GOOS and/or GOARCH.
