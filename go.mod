@@ -13,7 +13,7 @@ require (
 	github.com/onsi/gomega v1.13.0
 	github.com/pavel-v-chernykh/keystore-go/v4 v4.1.0
 	github.com/stretchr/testify v1.7.0
-	github.com/zeebo/xxh3 v1.0.0-rc3
+	github.com/zeebo/xxh3 v1.0.0-rc2
 	golang.org/x/net v0.0.0-20210520170846-37e1c6afe023
 	gomodules.xyz/atomic-writer v0.0.2
 	gomodules.xyz/cert v1.4.1
@@ -65,7 +65,6 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/json-iterator/go v1.1.11 // indirect
-	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/mailru/easyjson v0.7.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect

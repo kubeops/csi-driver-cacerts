@@ -90,7 +90,7 @@ func (h *Hasher) updateString(buf string) {
 
 		h.blk++
 		h.len = _stripe
-		copy(h.buf[:_stripe], h.buf[_block:])
+		copy(h.buf[_block:], h.buf[:_stripe])
 	}
 }
 
@@ -105,7 +105,6 @@ func (h *Hasher) Sum64() uint64 {
 	accs := h.acc
 
 	if h.len > 0 {
-		// We are only ever doing 1 block here, so no avx512.
 		if hasAVX2 {
 			accumAVX2(&accs, ptr(&h.buf[0]), key, h.len)
 		} else if hasSSE2 {
@@ -134,7 +133,6 @@ func (h *Hasher) Sum128() Uint128 {
 	accs := h.acc
 
 	if h.len > 0 {
-		// We are only ever doing 1 block here, so no avx512.
 		if hasAVX2 {
 			accumAVX2(&accs, ptr(&h.buf[0]), key, h.len)
 		} else if hasSSE2 {
