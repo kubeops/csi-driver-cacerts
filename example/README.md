@@ -15,8 +15,6 @@ $ kubectl create -f issuer.yaml
 $ kubectl apply -f nginx.yaml
 ```
 
-https://172.18.0.2:30789/
-
 ```
 $ cd ~/go/src/kubeops.dev/csi-driver-cacerts
 $ kubectl apply -f crds/cacerts.csi.cert-manager.io_caproviderclasses.yaml
@@ -52,13 +50,16 @@ root@curl:/# curl https://nginx.demo.svc.cluster.local
 
 ### ubuntu, debian, alpine
 
+```
 /etc/ssl/certs
 
 /etc/ssl/certs/java/cacerts
 /etc/ssl/certs/ca-certificates.crt
+```
 
 ### centos-6, oraclelinux-6
 
+```
 /etc/pki
 
 tls/cert.pem
@@ -70,9 +71,11 @@ ca-trust/extracted/java/cacerts
 
 ca-trust/extracted/openssl/ca-bundle.trust.crt
 tls/certs/ca-bundle.trust.crt
+```
 
 ### rockylinux, fedora, centos-7, centos-8, oraclelinux-7, oraclelinux-8
 
+```
 /etc/pki/ca-trust/extracted
 
 pem/tls-ca-bundle.pem
@@ -82,9 +85,10 @@ openssl/ca-bundle.trust.crt
 /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem
 /etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt
 /etc/pki/ca-trust/extracted/java/cacerts
+```
 
 ```
-$ docker run -it rockylinux/rockylinux cat /etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt
+docker run -it rockylinux/rockylinux cat /etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt
 ```
 
 ### opensuse/leap
