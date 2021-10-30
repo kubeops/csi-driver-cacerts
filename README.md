@@ -5,6 +5,18 @@ CSI driver that add ca certificates to a the OS trusted certificate issuers (eg,
 ## Example
 
 ```yaml
+apiVersion: cacerts.csi.cert-manager.io/v1alpha1
+kind: CAProviderClass
+metadata:
+  name: ca-provider
+  namespace: demo
+spec:
+  refs:
+  - apiGroup: cert-manager.io
+    kind: Issuer
+    # namespace:
+    name: ca-issuer
+---
 apiVersion: v1
 kind: Pod
 metadata:
@@ -27,6 +39,7 @@ spec:
       readOnly: true
       volumeAttributes:
         os: debian
+        # caProviderClasses: ns1/name,ns2
         caProviderClasses: ca-provider
 ```
 
