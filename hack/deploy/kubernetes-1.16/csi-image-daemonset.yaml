@@ -28,11 +28,11 @@ spec:
           lifecycle:
             preStop:
               exec:
-                command: ["/bin/sh", "-c", "rm -rf /registration/csi-image /registration/csi-image-reg.sock"]
+                command: ["/bin/sh", "-c", "rm -rf /registration/cert-manager-csi-driver-cacerts /registration/cert-manager-csi-driver-cacerts-reg.sock"]
           args:
             - --v=5
             - --csi-address=/csi/csi.sock
-            - --kubelet-registration-path=/var/lib/kubelet/plugins/csi-image/csi.sock
+            - --kubelet-registration-path=/var/lib/kubelet/plugins/cert-manager-csi-driver-cacerts/csi.sock
           env:
             - name: KUBE_NODE_NAME
               valueFrom:
@@ -46,7 +46,7 @@ spec:
             name: registration-dir
 
         - name: driver
-          image: appscode/csi-driver-cacerts:cacerts_linux_amd64@sha256:39c2cfd851b69dcaec450c8f803f8744e0982d73894cca352e18707c08b99b19
+          image: appscode/csi-driver-cacerts:v0.0.1
           args:
             - "--v=5"
             - "--endpoint=$(CSI_ENDPOINT)"
@@ -111,7 +111,7 @@ spec:
 
       volumes:
         - hostPath:
-            path: /var/lib/kubelet/plugins/csi-image
+            path: /var/lib/kubelet/plugins/cert-manager-csi-driver-cacerts
             type: DirectoryOrCreate
           name: socket-dir
         - hostPath:

@@ -99,7 +99,6 @@ func (r *CAProviderClassReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&api.CAProviderClass{}).
 		Watches(&source.Kind{Type: &core.Secret{}}, handler.EnqueueRequestsFromMapFunc(mf(schema.GroupKind{Group: "", Kind: "Secret"}))).
-		Watches(&source.Kind{Type: &cmapi.Certificate{}}, handler.EnqueueRequestsFromMapFunc(mf(schema.GroupKind{Group: cmapi.SchemeGroupVersion.Group, Kind: "Certificate"}))).
 		Watches(&source.Kind{Type: &cmapi.Issuer{}}, handler.EnqueueRequestsFromMapFunc(mf(schema.GroupKind{Group: cmapi.SchemeGroupVersion.Group, Kind: "Issuer"}))).
 		Watches(&source.Kind{Type: &cmapi.ClusterIssuer{}}, handler.EnqueueRequestsFromMapFunc(mf(schema.GroupKind{Group: cmapi.SchemeGroupVersion.Group, Kind: "ClusterIssuer"}))).
 		Complete(r)
