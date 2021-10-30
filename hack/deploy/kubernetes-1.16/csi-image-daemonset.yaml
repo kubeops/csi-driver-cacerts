@@ -45,6 +45,25 @@ spec:
           - mountPath: /registration
             name: registration-dir
 
+        - name: liveness-probe
+          image: k8s.gcr.io/sig-storage/livenessprobe:v2.4.0
+          args:
+            - --csi-address=/csi/csi.sock
+            - --probe-timeout=3s
+            - --health-port=9808
+            - --v=2
+          imagePullPolicy: IfNotPresent
+          volumeMounts:
+            - mountPath: /csi
+              name: socket-dir
+          resources:
+            limits:
+              cpu: 100m
+              memory: 100Mi
+            requests:
+              cpu: 10m
+              memory: 20Mi
+
         - name: driver
           image: appscode/csi-driver-cacerts:v0.0.1
           args:
@@ -89,25 +108,6 @@ spec:
             - mountPath: /var/run/containers/storage
               mountPropagation: Bidirectional
               name: storagerunroot-dir
-
-        - name: liveness-probe
-          image: k8s.gcr.io/sig-storage/livenessprobe:v2.4.0
-          args:
-            - --csi-address=/csi/csi.sock
-            - --probe-timeout=3s
-            - --health-port=9808
-            - --v=2
-          imagePullPolicy: IfNotPresent
-          volumeMounts:
-            - mountPath: /csi
-              name: socket-dir
-          resources:
-            limits:
-              cpu: 100m
-              memory: 100Mi
-            requests:
-              cpu: 10m
-              memory: 20Mi
 
       volumes:
         - hostPath:

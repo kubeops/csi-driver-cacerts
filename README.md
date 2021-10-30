@@ -60,11 +60,12 @@ You can find more detailed examples in the examples folder.
 ## Installation Instructions
 
 - First [install cert-manager](https://cert-manager.io/docs/installation/).
-- Then run the following commands:
+- Then install the cacerts CSI driver using the following helm commnads:
 
-```bash
-$ kubectl apply -f crds/cacerts.csi.cert-manager.io_caproviderclasses.yaml
-$ ./hack/deploy/deploy-image.sh
+```
+$ helm repo add appscode https://charts.appscode.com/stable/
+$ helm repo update
+$ helm upgrade -i cert-manager-csi-driver-cacerts appscode/cert-manager-csi-driver-cacerts -n cert-manager --wait
 ```
 
 ## OS Distribution Support
@@ -87,5 +88,4 @@ Different OS uses different files for trusted ca certificates. This driver has b
 The scope of this project is intentionally limited and there is no plan to extend it. Having said that below is a list of known issues/limitation that I intend to address:
 
 - Support for additional OS distros - Please file an issue in this repo for this.
-- Helm chart - Working on this [here](https://github.com/kubeops/installer/pull/13).
 - Currently the contents of the mounted volume will not be updated even if the secrets / issuers are updated. Today you have to restart the pod to update the contents of the mounted volume. I intend to fix this. But there is a related issue where if the node driver pod is restarted, it forgets all the volumes mounted so far. This seems like a limitation of the Ephemeral CSI driver plugin at Kubernetes level today.

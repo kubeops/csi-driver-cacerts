@@ -5,7 +5,6 @@ $ kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v1
 $ helm upgrade -i -n cert-manager cert-manager-csi-driver jetstack/cert-manager-csi-driver --wait
 
 $ kubectl create ns demo
-$ cd samples/ca-issuer
 $ openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout ./ca.key -out ./ca.crt -subj "/CN=mongo/O=kubedb"
 $ kubectl create secret tls ca \
        --cert=ca.crt \
@@ -16,9 +15,6 @@ $ kubectl apply -f nginx.yaml
 ```
 
 ```
-$ cd ~/go/src/kubeops.dev/csi-driver-cacerts
-$ kubectl apply -f crds/cacerts.csi.cert-manager.io_caproviderclasses.yaml
-
 kubectl apply -f curl-alpine.yaml
 kubectl apply -f curl-centos6.yaml
 kubectl apply -f curl-centos7.yaml

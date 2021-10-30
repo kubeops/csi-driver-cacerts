@@ -437,17 +437,17 @@ endif
 .PHONY: install
 install:
 	@cd ../installer; \
-	helm install grafana-operator charts/grafana-operator --wait \
+	helm install cert-manager-csi-driver-cacerts charts/cert-manager-csi-driver-cacerts --wait \
 		--namespace=$(KUBE_NAMESPACE) --create-namespace \
-		--set operator.registry=$(REGISTRY) \
-		--set operator.tag=$(TAG) \
-		--set imagePullPolicy=$(IMAGE_PULL_POLICY) \
+		--set driver.registry=$(REGISTRY) \
+		--set driver.tag=$(TAG) \
+		--set driver.pullPolicy=$(IMAGE_PULL_POLICY) \
 		$(IMAGE_PULL_SECRETS); \
 
 .PHONY: uninstall
 uninstall:
 	@cd ../installer; \
-	helm uninstall grafana-operator --namespace=$(KUBE_NAMESPACE) || true
+	helm uninstall cert-manager-csi-driver-cacerts --namespace=$(KUBE_NAMESPACE) || true
 
 .PHONY: purge
 purge: uninstall
