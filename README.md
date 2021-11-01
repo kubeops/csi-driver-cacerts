@@ -12,7 +12,7 @@ Projects like [cert-manager](https://github.com/jetstack/cert-manager) and [cert
 
 - Java uses its own special file format for ca certificates. Users have to have a cli called `keytool` to add these custom ca certificates and pass that to Java applications. This was one of the original motivating use-cases for this csi driver. As an example, take a look at the Graylog documentation on how to [add a self-signed certificate to the JVM trust store](https://archivedocs.graylog.org/en/2.4/pages/configuration/https.html#adding-a-self-signed-certificate-to-the-jvm-trust-store).
 
-The UX in these types of use-cases can be simplified dramatically by using a Ephemeral CSI driver that augments the operating systems default trusted certificates with the custom ca certificates required by a given pod. This CSI driver does exactly that.
+The UX in these types of use-cases can be simplified dramatically by using a Ephemeral CSI driver that augments the default trusted certificates of the operating system with the custom ca certificates required by a given pod. This CSI driver does exactly that.
 
 ## Example
 
