@@ -27,6 +27,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 
 	api "kubeops.dev/csi-driver-cacerts/apis/cacerts/v1alpha1"
 	csicommon "kubeops.dev/csi-driver-cacerts/pkg/csi-common"
@@ -163,7 +164,7 @@ func (ns *nodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 	}
 
 	providerKeys := strings.FieldsFunc(caProviderClasses, func(r rune) bool {
-		return r == ',' || r == ';'
+		return r == ',' || r == ';' || unicode.IsSpace(r)
 	})
 	providerNames := ksets.NewNamespacedName()
 	for _, key := range providerKeys {
