@@ -255,7 +255,8 @@ func TestSign(t *testing.T) {
 			),
 			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
 				Response: &http.Response{
-					Body: io.NopCloser(bytes.NewReader(bundleData))},
+					Body: io.NopCloser(bytes.NewReader(bundleData)),
+				},
 			}, nil),
 			expectedErr:  nil,
 			expectedCert: testLeafCertificate + testIntermediateCa,
@@ -269,7 +270,8 @@ func TestSign(t *testing.T) {
 			),
 			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
 				Response: &http.Response{
-					Body: io.NopCloser(bytes.NewReader(rootBundleData))},
+					Body: io.NopCloser(bytes.NewReader(rootBundleData)),
+				},
 			}, nil),
 			expectedErr:  nil,
 			expectedCert: testLeafCertificate + testIntermediateCa,
@@ -283,7 +285,8 @@ func TestSign(t *testing.T) {
 			),
 			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
 				Response: &http.Response{
-					Body: io.NopCloser(bytes.NewReader(bundleData))},
+					Body: io.NopCloser(bytes.NewReader(bundleData)),
+				},
 			}, nil),
 			expectedErr:  nil,
 			expectedCert: testLeafCertificate + testIntermediateCa,
@@ -359,7 +362,6 @@ func TestExtractCertificatesFromVaultCertificateSecret(t *testing.T) {
 
 	for name, test := range tests {
 		cert, ca, err := extractCertificatesFromVaultCertificateSecret(test.secret)
-
 		if err != nil {
 			t.Errorf("%s: failed to extract certificate: %s", name, err)
 		}

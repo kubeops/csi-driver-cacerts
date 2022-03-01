@@ -28,8 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type SecretProvider struct {
-}
+type SecretProvider struct{}
 
 var _ lib.CAProvider = &SecretProvider{}
 

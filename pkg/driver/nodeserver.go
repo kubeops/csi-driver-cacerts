@@ -186,7 +186,7 @@ func (ns *nodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 	notMnt, err := mount.New("").IsLikelyNotMountPoint(targetPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			if err = os.MkdirAll(targetPath, 0555); err != nil {
+			if err = os.MkdirAll(targetPath, 0o555); err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
 			notMnt = true
@@ -349,7 +349,7 @@ func updateCACerts(certs map[uint64]*x509.Certificate, osFamily OsFamily, srcDir
 		}
 	}
 
-	err = os.MkdirAll(targetDir, 0755)
+	err = os.MkdirAll(targetDir, 0o755)
 	if err != nil {
 		return err
 	}
@@ -362,29 +362,29 @@ func updateCACerts(certs map[uint64]*x509.Certificate, osFamily OsFamily, srcDir
 	switch osFamily {
 	case OsFamilyDebian, OsFamilyUbuntu, OsFamilyAlpine:
 		payload = map[string]atomic_writer.FileProjection{
-			"ca-certificates.crt": {Data: caBuf.Bytes(), Mode: 0444},
-			"java/cacerts":        {Data: javaBuf.Bytes(), Mode: 0444},
+			"ca-certificates.crt": {Data: caBuf.Bytes(), Mode: 0o444},
+			"java/cacerts":        {Data: javaBuf.Bytes(), Mode: 0o444},
 		}
 	case OsFamilyOpensuse:
 		payload = map[string]atomic_writer.FileProjection{
-			"ca-bundle.pem": {Data: caBuf.Bytes(), Mode: 0444},
-			"java-cacerts":  {Data: javaBuf.Bytes(), Mode: 0444},
+			"ca-bundle.pem": {Data: caBuf.Bytes(), Mode: 0o444},
+			"java-cacerts":  {Data: javaBuf.Bytes(), Mode: 0o444},
 		}
 	case OsFamilyFedora, OsFamilyCentos, OsFamilyOracleLinux, OsFamilyRockyLinux:
 		payload = map[string]atomic_writer.FileProjection{
-			"pem/tls-ca-bundle.pem":       {Data: caBuf.Bytes(), Mode: 0444},
-			"java/cacerts":                {Data: javaBuf.Bytes(), Mode: 0444},
-			"openssl/ca-bundle.trust.crt": {Data: trsutData, Mode: 0444},
+			"pem/tls-ca-bundle.pem":       {Data: caBuf.Bytes(), Mode: 0o444},
+			"java/cacerts":                {Data: javaBuf.Bytes(), Mode: 0o444},
+			"openssl/ca-bundle.trust.crt": {Data: trsutData, Mode: 0o444},
 		}
 	case OsFamilyCentos6, OsFamilyOracleLinux6:
 		payload = map[string]atomic_writer.FileProjection{
-			"tls/cert.pem":                                   {Data: caBuf.Bytes(), Mode: 0444},
-			"tls/certs/ca-bundle.crt":                        {Data: caBuf.Bytes(), Mode: 0444},
-			"ca-trust/extracted/pem/tls-ca-bundle.pem":       {Data: caBuf.Bytes(), Mode: 0444},
-			"java/cacerts":                                   {Data: javaBuf.Bytes(), Mode: 0444},
-			"ca-trust/extracted/java/cacerts":                {Data: javaBuf.Bytes(), Mode: 0444},
-			"ca-trust/extracted/openssl/ca-bundle.trust.crt": {Data: trsutData, Mode: 0444},
-			"tls/certs/ca-bundle.trust.crt":                  {Data: trsutData, Mode: 0444},
+			"tls/cert.pem":                                   {Data: caBuf.Bytes(), Mode: 0o444},
+			"tls/certs/ca-bundle.crt":                        {Data: caBuf.Bytes(), Mode: 0o444},
+			"ca-trust/extracted/pem/tls-ca-bundle.pem":       {Data: caBuf.Bytes(), Mode: 0o444},
+			"java/cacerts":                                   {Data: javaBuf.Bytes(), Mode: 0o444},
+			"ca-trust/extracted/java/cacerts":                {Data: javaBuf.Bytes(), Mode: 0o444},
+			"ca-trust/extracted/openssl/ca-bundle.trust.crt": {Data: trsutData, Mode: 0o444},
+			"tls/certs/ca-bundle.trust.crt":                  {Data: trsutData, Mode: 0o444},
 		}
 	}
 	_, err = certWriter.Write(payload)

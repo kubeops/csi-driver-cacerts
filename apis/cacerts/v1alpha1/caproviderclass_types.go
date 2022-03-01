@@ -34,8 +34,7 @@ type CAProviderClassSpec struct {
 }
 
 // CAProviderClassStatus defines the observed state of CAProviderClass
-type CAProviderClassStatus struct {
-}
+type CAProviderClassStatus struct{}
 
 // CAProviderClass is the Schema for the caproviderclasses API
 
