@@ -29,9 +29,7 @@ type driver struct {
 	endpoint  string
 }
 
-var (
-	version = "0.0.1"
-)
+var version = "0.0.1"
 
 func NewDriver(driverName, nodeID, endpoint string) *driver {
 	klog.Infof("Driver: %v version: %v", driverName, version)

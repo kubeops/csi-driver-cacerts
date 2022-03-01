@@ -30,12 +30,9 @@ const (
 	fakeNodeID     = "fakeNodeID"
 )
 
-var (
-	vendorVersion = "1.0.0-rc2"
-)
+var vendorVersion = "1.0.0-rc2"
 
 func NewFakeDriver() *CSIDriver {
-
 	driver := NewCSIDriver(fakeDriverName, vendorVersion, fakeNodeID)
 
 	return driver
@@ -48,7 +45,6 @@ func TestNewFakeDriver(t *testing.T) {
 }
 
 func TestGetVolumeCapabilityAccessModes(t *testing.T) {
-
 	d := NewFakeDriver()
 
 	// Test no volume access modes.
@@ -100,5 +96,4 @@ func TestValidateControllerServiceRequest(t *testing.T) {
 	// Test controller service get capacity is supported
 	err = d.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_GET_CAPACITY)
 	assert.NoError(t, err)
-
 }
