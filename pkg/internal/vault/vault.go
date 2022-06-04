@@ -28,10 +28,10 @@ import (
 	"strings"
 	"time"
 
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/util/pki"
 	vault "github.com/hashicorp/vault/api"
 	"github.com/hashicorp/vault/sdk/helper/certutil"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/jetstack/cert-manager/pkg/util/pki"
 	corev1 "k8s.io/api/core/v1"
 	"kmodules.xyz/client-go/tools/configreader"
 	"sigs.k8s.io/controller-runtime/pkg/client"

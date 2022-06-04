@@ -20,8 +20,8 @@ package fake
 import (
 	"time"
 
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	vault "github.com/hashicorp/vault/api"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
 	"kmodules.xyz/client-go/tools/configreader"
 )
 

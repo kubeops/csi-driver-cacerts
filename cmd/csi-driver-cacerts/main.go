@@ -24,7 +24,7 @@ import (
 	cacertscontrollers "kubeops.dev/csi-driver-cacerts/pkg/controllers/cacerts"
 	"kubeops.dev/csi-driver-cacerts/pkg/driver"
 
-	cmscheme "github.com/jetstack/cert-manager/pkg/client/clientset/versioned/scheme"
+	cmscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"

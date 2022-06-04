@@ -28,10 +28,8 @@ API rule violation: list_type_missing,k8s.io/api/core/v1,EphemeralContainerCommo
 API rule violation: list_type_missing,k8s.io/api/core/v1,EphemeralContainerCommon,Command
 API rule violation: list_type_missing,k8s.io/api/core/v1,EphemeralContainerCommon,Env
 API rule violation: list_type_missing,k8s.io/api/core/v1,EphemeralContainerCommon,EnvFrom
-API rule violation: list_type_missing,k8s.io/api/core/v1,EphemeralContainerCommon,Ports
 API rule violation: list_type_missing,k8s.io/api/core/v1,EphemeralContainerCommon,VolumeDevices
 API rule violation: list_type_missing,k8s.io/api/core/v1,EphemeralContainerCommon,VolumeMounts
-API rule violation: list_type_missing,k8s.io/api/core/v1,EphemeralContainers,EphemeralContainers
 API rule violation: list_type_missing,k8s.io/api/core/v1,ExecAction,Command
 API rule violation: list_type_missing,k8s.io/api/core/v1,FCVolumeSource,TargetWWNs
 API rule violation: list_type_missing,k8s.io/api/core/v1,FCVolumeSource,WWIDs
@@ -99,7 +97,6 @@ API rule violation: list_type_missing,k8s.io/api/core/v1,ServiceAccount,ImagePul
 API rule violation: list_type_missing,k8s.io/api/core/v1,ServiceAccount,Secrets
 API rule violation: list_type_missing,k8s.io/api/core/v1,ServiceSpec,ExternalIPs
 API rule violation: list_type_missing,k8s.io/api/core/v1,ServiceSpec,LoadBalancerSourceRanges
-API rule violation: list_type_missing,k8s.io/api/core/v1,ServiceSpec,TopologyKeys
 API rule violation: list_type_missing,k8s.io/api/core/v1,TopologySelectorLabelRequirement,Values
 API rule violation: list_type_missing,k8s.io/api/core/v1,TopologySelectorTerm,MatchLabelExpressions
 API rule violation: list_type_missing,k8s.io/apimachinery/pkg/apis/meta/v1,APIGroup,ServerAddressByClientCIDRs
@@ -141,6 +138,7 @@ API rule violation: list_type_missing,kmodules.xyz/client-go/api/v1,X509Subject,
 API rule violation: list_type_missing,kmodules.xyz/client-go/api/v1,X509Subject,PostalCodes
 API rule violation: list_type_missing,kmodules.xyz/client-go/api/v1,X509Subject,Provinces
 API rule violation: list_type_missing,kmodules.xyz/client-go/api/v1,X509Subject,StreetAddresses
+API rule violation: list_type_missing,kubeops.dev/csi-driver-cacerts/apis/cacerts/v1alpha1,CAProviderClassSpec,Refs
 API rule violation: names_match,k8s.io/api/core/v1,AzureDiskVolumeSource,DataDiskURI
 API rule violation: names_match,k8s.io/api/core/v1,ContainerStatus,LastTerminationState
 API rule violation: names_match,k8s.io/api/core/v1,DaemonEndpoint,Port
@@ -178,6 +176,7 @@ API rule violation: names_match,k8s.io/apimachinery/pkg/apis/meta/v1,Duration,Du
 API rule violation: names_match,k8s.io/apimachinery/pkg/apis/meta/v1,InternalEvent,Object
 API rule violation: names_match,k8s.io/apimachinery/pkg/apis/meta/v1,InternalEvent,Type
 API rule violation: names_match,k8s.io/apimachinery/pkg/apis/meta/v1,MicroTime,Time
+API rule violation: names_match,k8s.io/apimachinery/pkg/apis/meta/v1,ObjectMeta,ZZZ_DeprecatedClusterName
 API rule violation: names_match,k8s.io/apimachinery/pkg/apis/meta/v1,StatusCause,Type
 API rule violation: names_match,k8s.io/apimachinery/pkg/apis/meta/v1,Time,Time
 API rule violation: names_match,k8s.io/apimachinery/pkg/runtime,Unknown,ContentEncoding
@@ -187,3 +186,4 @@ API rule violation: names_match,k8s.io/apimachinery/pkg/util/intstr,IntOrString,
 API rule violation: names_match,k8s.io/apimachinery/pkg/util/intstr,IntOrString,StrVal
 API rule violation: names_match,k8s.io/apimachinery/pkg/util/intstr,IntOrString,Type
 API rule violation: names_match,kmodules.xyz/client-go/api/v1,CertificateSpec,URIs
+API rule violation: names_match,kmodules.xyz/client-go/api/v1,TimeOfDay,Time
