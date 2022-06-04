@@ -34,7 +34,7 @@ import (
 	"kubeops.dev/csi-driver-cacerts/pkg/providers"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
-	"github.com/pavel-v-chernykh/keystore-go/v4"
+	"github.com/pavlo-v-chernykh/keystore-go/v4"
 	"github.com/zeebo/xxh3"
 	"golang.org/x/net/context"
 	atomic_writer "gomodules.xyz/atomic-writer"
@@ -256,7 +256,7 @@ func fetchCAcerts(mgr ctrl.Manager, caProviders []api.CAProviderClass) (map[uint
 	for _, pc := range caProviders {
 		for _, typedRef := range pc.Spec.Refs {
 			ref := api.RefFrom(pc, typedRef)
-			obj, err := clientx.GetForGVK(mgr.GetClient(), ref.GroupKind().WithVersion(""), ref.ObjKey())
+			obj, err := clientx.GetForGVK(context.TODO(), mgr.GetClient(), ref.GroupKind().WithVersion(""), ref.ObjKey())
 			if err != nil {
 				return nil, err
 			}

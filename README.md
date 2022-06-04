@@ -4,7 +4,7 @@ CSI driver that add ca certificates to a the OS trusted certificate issuers (eg,
 
 ## Why
 
-Projects like [cert-manager](https://github.com/jetstack/cert-manager) and [cert-manage-csi-driver](https://github.com/cert-manager/csi-driver) make it very easy to deploy servers that are secured using TLS. But this requires clients of such servers to pass the ca certificate to verify server identity. This can be painful for a number of reasons:
+Projects like [cert-manager](https://github.com/cert-manager/cert-manager) and [cert-manage-csi-driver](https://github.com/cert-manager/csi-driver) make it very easy to deploy servers that are secured using TLS. But this requires clients of such servers to pass the ca certificate to verify server identity. This can be painful for a number of reasons:
 
 - Say, the server is deployed in one namespace and the client application is running in a different namespace. Now, users have to copy the ca certificate via a secret into a different namespace.
 

@@ -22,8 +22,8 @@ import (
 	api "kubeops.dev/csi-driver-cacerts/apis/cacerts/v1alpha1"
 	"kubeops.dev/csi-driver-cacerts/pkg/providers/lib"
 
-	"github.com/jetstack/cert-manager/pkg/apis/certmanager"
-	cmapi "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/cert-manager/cert-manager/pkg/apis/certmanager"
+	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )

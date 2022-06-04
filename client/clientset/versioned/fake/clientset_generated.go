@@ -75,7 +75,10 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 	return c.tracker
 }
 
-var _ clientset.Interface = &Clientset{}
+var (
+	_ clientset.Interface = &Clientset{}
+	_ testing.FakeClient  = &Clientset{}
+)
 
 // CacertsV1alpha1 retrieves the CacertsV1alpha1Client
 func (c *Clientset) CacertsV1alpha1() cacertsv1alpha1.CacertsV1alpha1Interface {
