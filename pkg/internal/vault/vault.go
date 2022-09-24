@@ -21,7 +21,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"path"
 	"path/filepath"
@@ -129,7 +129,7 @@ func (v *Vault) CA() (ca []byte, err error) {
 	}
 	defer resp.Body.Close()
 
-	return ioutil.ReadAll(resp.Body)
+	return io.ReadAll(resp.Body)
 }
 
 // Sign will connect to a Vault instance to sign a certificate signing request.

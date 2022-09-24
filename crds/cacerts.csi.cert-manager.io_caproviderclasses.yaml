@@ -53,6 +53,7 @@ spec:
                   - kind
                   - name
                   type: object
+                  x-kubernetes-map-type: atomic
                 type: array
             type: object
           status:
