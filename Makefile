@@ -20,7 +20,7 @@ BIN      := csi-driver-cacerts
 COMPRESS ?= no
 
 CRD_OPTIONS          ?= "crd:maxDescLen=0,generateEmbeddedObjectMeta=true,allowDangerousTypes=true"
-CODE_GENERATOR_IMAGE ?= appscode/gengo:release-1.24
+CODE_GENERATOR_IMAGE ?= appscode/gengo:release-1.25
 API_GROUPS           ?= cacerts:v1alpha1
 
 # Where to push the docker image.
@@ -77,7 +77,7 @@ TAG              := $(VERSION)_$(OS)_$(ARCH)
 TAG_PROD         := $(TAG)
 TAG_DBG          := $(VERSION)-dbg_$(OS)_$(ARCH)
 
-GO_VERSION       ?= 1.18
+GO_VERSION       ?= 1.19
 BUILD_IMAGE      ?= appscode/golang-dev:$(GO_VERSION)
 CHART_TEST_IMAGE ?= quay.io/helmpack/chart-testing:v3.5.1
 

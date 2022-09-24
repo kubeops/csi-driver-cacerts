@@ -21,7 +21,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sort"
@@ -321,7 +320,7 @@ func updateCACerts(certs map[uint64]*x509.Certificate, osFamily OsFamily, srcDir
 	}
 
 	// /etc/ssl/certs/ca-bundle.trust.crt
-	trsutData, err := ioutil.ReadFile(filepath.Join(srcDir, "ca-bundle.trust.crt"))
+	trsutData, err := os.ReadFile(filepath.Join(srcDir, "ca-bundle.trust.crt"))
 	if err != nil {
 		return err
 	}
@@ -332,7 +331,7 @@ func updateCACerts(certs map[uint64]*x509.Certificate, osFamily OsFamily, srcDir
 	}
 
 	var caBuf bytes.Buffer
-	caData, err := ioutil.ReadFile(filepath.Join(srcDir, cacertsGeneric))
+	caData, err := os.ReadFile(filepath.Join(srcDir, cacertsGeneric))
 	if err != nil {
 		return err
 	}
