@@ -169,7 +169,7 @@ openapi: $(addprefix openapi-, $(subst :,_, $(API_GROUPS)))
 		-w $(DOCKER_REPO_ROOT)                           \
 		--env HTTP_PROXY=$(HTTP_PROXY)                   \
 		--env HTTPS_PROXY=$(HTTPS_PROXY)                 \
-	    --env GO111MODULE=on                             \
+	    --env                             \
 	    --env GOFLAGS="-mod=vendor"                      \
 		$(BUILD_IMAGE)                                   \
 		go run hack/gencrd/main.go
@@ -422,7 +422,7 @@ lint: $(BUILD_DIRS)
 	    -v $$(pwd)/.go/cache:/.cache                            \
 	    --env HTTP_PROXY=$(HTTP_PROXY)                          \
 	    --env HTTPS_PROXY=$(HTTPS_PROXY)                        \
-	    --env GO111MODULE=on                                    \
+	    --env                                    \
 	    --env GOFLAGS="-mod=vendor"                             \
 	    $(BUILD_IMAGE)                                          \
 	    golangci-lint run --enable $(ADDTL_LINTERS) --timeout=10m --skip-files="generated.*\.go$\" --skip-dirs-use-default --skip-dirs=client,vendor
@@ -443,7 +443,7 @@ endif
 .PHONY: install
 install:
 	@cd ../installer; \
-	helm install cert-manager-csi-driver-cacerts charts/cert-manager-csi-driver-cacerts --wait \
+	helm upgrade -i cert-manager-csi-driver-cacerts charts/cert-manager-csi-driver-cacerts --wait \
 		--namespace=$(KUBE_NAMESPACE) --create-namespace \
 		--set driver.registry=$(REGISTRY) \
 		--set driver.tag=$(TAG) \
@@ -467,8 +467,8 @@ verify: verify-gen verify-modules
 
 .PHONY: verify-modules
 verify-modules:
-	GO111MODULE=on go mod tidy
-	GO111MODULE=on go mod vendor
+	go mod tidy
+	go mod vendor
 	@if !(git diff --exit-code HEAD); then \
 		echo "go module files are out of date"; exit 1; \
 	fi
@@ -538,7 +538,7 @@ clean:
 
 .PHONY: run
 run:
-	GO111MODULE=on go run -mod=vendor ./cmd/grafana-operator run \
+	go run -mod=vendor ./cmd/csi-driver-cacerts run \
 		--v=3 \
 		--secure-port=8443 \
 		--kubeconfig=$(KUBECONFIG) \
@@ -553,4 +553,7 @@ push-to-kind: container
 	@echo "Image has been pushed successfully into kind cluster."
 
 .PHONY: deploy-to-kind
-deploy-to-kind: uninstall push-to-kind install
+deploy-to-kind: push-to-kind install
+
+.PHONY: deploy
+deploy: push install
