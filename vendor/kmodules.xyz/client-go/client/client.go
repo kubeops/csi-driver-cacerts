@@ -23,6 +23,7 @@ import (
 	kmapi "kmodules.xyz/client-go/api/v1"
 	"kmodules.xyz/client-go/tools/clusterid"
 
+	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	kerr "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -61,7 +62,10 @@ func NewUncachedClient(cfg *rest.Config, funcs ...func(*runtime.Scheme) error) (
 	})
 }
 
-type TransformFunc func(obj client.Object, createOp bool) client.Object
+type (
+	TransformFunc       func(obj client.Object, createOp bool) client.Object
+	TransformStatusFunc func(obj client.Object) client.Object
+)
 
 func CreateOrPatch(ctx context.Context, c client.Client, obj client.Object, transform TransformFunc, opts ...client.PatchOption) (client.Object, kutil.VerbType, error) {
 	key := types.NamespacedName{
@@ -85,13 +89,16 @@ func CreateOrPatch(ctx context.Context, c client.Client, obj client.Object, tran
 		return nil, kutil.VerbUnchanged, err
 	}
 
+	gvk, err := apiutil.GVKForObject(obj, c.Scheme())
+	if err != nil {
+		return nil, kutil.VerbUnchanged, errors.Wrapf(err, "failed to get GVK for object %T", obj)
+	}
 	var patch client.Patch
-	if isOfficialTypes(obj.GetObjectKind().GroupVersionKind().Group) {
+	if isOfficialTypes(gvk.Group) {
 		patch = client.StrategicMergeFrom(obj)
 	} else {
 		patch = client.MergeFrom(obj)
 	}
-
 	obj = transform(obj.DeepCopyObject().(client.Object), false)
 	err = c.Patch(ctx, obj, patch, opts...)
 	if err != nil {
@@ -100,7 +107,7 @@ func CreateOrPatch(ctx context.Context, c client.Client, obj client.Object, tran
 	return obj, kutil.VerbPatched, nil
 }
 
-func PatchStatus(ctx context.Context, c client.Client, obj client.Object, transform TransformFunc, opts ...client.PatchOption) (client.Object, kutil.VerbType, error) {
+func PatchStatus(ctx context.Context, c client.Client, obj client.Object, transform TransformStatusFunc, opts ...client.PatchOption) (client.Object, kutil.VerbType, error) {
 	key := types.NamespacedName{
 		Namespace: obj.GetNamespace(),
 		Name:      obj.GetName(),
@@ -110,14 +117,13 @@ func PatchStatus(ctx context.Context, c client.Client, obj client.Object, transf
 		return nil, kutil.VerbUnchanged, err
 	}
 
-	var patch client.Patch
-	if isOfficialTypes(obj.GetObjectKind().GroupVersionKind().Group) {
-		patch = client.StrategicMergeFrom(obj)
-	} else {
-		patch = client.MergeFrom(obj)
-	}
-
-	obj = transform(obj.DeepCopyObject().(client.Object), false)
+	// The body of the request was in an unknown format -
+	// accepted media types include:
+	//   - application/json-patch+json,
+	//   - application/merge-patch+json,
+	//   - application/apply-patch+yaml
+	patch := client.MergeFrom(obj)
+	obj = transform(obj.DeepCopyObject().(client.Object))
 	err = c.Status().Patch(ctx, obj, patch, opts...)
 	if err != nil {
 		return nil, kutil.VerbUnchanged, err
