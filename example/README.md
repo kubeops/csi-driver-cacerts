@@ -1,8 +1,18 @@
 # cert-manager CSI Driver
 
 ```
-$ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.5.4/cert-manager.yaml
-$ helm upgrade -i -n cert-manager cert-manager-csi-driver jetstack/cert-manager-csi-driver --wait
+$ helm repo add jetstack https://charts.jetstack.io
+$ helm repo update
+$ helm upgrade -i \
+  cert-manager jetstack/cert-manager \
+  --namespace cert-manager \
+  --create-namespace \
+  --version v1.10.0 \
+  --set installCRDs=true
+
+$ helm upgrade -i \
+  cert-manager-csi-driver jetstack/cert-manager-csi-driver \
+  -n cert-manager --wait
 
 $ kubectl create ns demo
 $ openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout ./ca.key -out ./ca.crt -subj "/CN=mongo/O=kubedb"
