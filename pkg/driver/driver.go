@@ -18,6 +18,7 @@ package driver
 
 import (
 	csicommon "kubeops.dev/csi-driver-cacerts/pkg/csi-common"
+	"kubeops.dev/csi-driver-cacerts/pkg/providers"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"k8s.io/klog/v2"
@@ -51,19 +52,20 @@ func NewDriver(driverName, nodeID, endpoint string) *driver {
 	return d
 }
 
-func NewNodeServer(d *csicommon.CSIDriver, mgr ctrl.Manager) *nodeServer {
+func NewNodeServer(d *csicommon.CSIDriver, mgr ctrl.Manager, opts providers.IssuerOptions) *nodeServer {
 	return &nodeServer{
 		DefaultNodeServer: csicommon.NewDefaultNodeServer(d),
 		mgr:               mgr,
+		opts:              opts,
 	}
 }
 
-func (d *driver) Run(mgr ctrl.Manager) {
+func (d *driver) Run(mgr ctrl.Manager, opts providers.IssuerOptions) {
 	s := csicommon.NewNonBlockingGRPCServer()
 	s.Start(d.endpoint,
 		csicommon.NewDefaultIdentityServer(d.csiDriver),
 		csicommon.NewDefaultControllerServer(d.csiDriver),
-		NewNodeServer(d.csiDriver, mgr))
+		NewNodeServer(d.csiDriver, mgr, opts))
 	// FIX(tamal): Don't wait because we need to start the controller
 	// s.Wait()
 }

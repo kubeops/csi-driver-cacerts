@@ -23,6 +23,7 @@ import (
 	api "kubeops.dev/csi-driver-cacerts/apis/cacerts/v1alpha1"
 	cacertscontrollers "kubeops.dev/csi-driver-cacerts/pkg/controllers/cacerts"
 	"kubeops.dev/csi-driver-cacerts/pkg/driver"
+	"kubeops.dev/csi-driver-cacerts/pkg/providers"
 
 	cmscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,6 +32,10 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
 	ctrl "sigs.k8s.io/controller-runtime"
+)
+
+const (
+	defaultClusterResourceNamespace = "kube-system"
 )
 
 var (
@@ -43,6 +48,10 @@ var (
 	metricsAddr = flag.String("metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	qps         = flag.Float64("qps", 100, "The maximum QPS to the master from this client")
 	burst       = flag.Int("burst", 100, "The maximum burst for throttle")
+
+	clusterResourceNamespace = flag.String("cluster-resource-namespace", defaultClusterResourceNamespace,
+		"Namespace to store resources owned by cluster scoped resources such as ClusterIssuer in. "+
+			"This must be specified if ClusterIssuers are enabled.")
 )
 
 func init() {
@@ -86,7 +95,9 @@ func main() {
 
 	setupLog.Info("starting driver")
 	d := driver.NewDriver(*driverName, *nodeID, *endpoint)
-	d.Run(mgr)
+	d.Run(mgr, providers.IssuerOptions{
+		ClusterResourceNamespace: *clusterResourceNamespace,
+	})
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {

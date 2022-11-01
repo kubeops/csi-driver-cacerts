@@ -119,7 +119,8 @@ type nodeServer struct {
 	*csicommon.DefaultNodeServer
 	Timeout time.Duration
 
-	mgr ctrl.Manager
+	mgr  ctrl.Manager
+	opts providers.IssuerOptions
 }
 
 func (ns *nodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
@@ -229,7 +230,7 @@ func (ns *nodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 		caProviders = append(caProviders, pc)
 	}
 
-	certs, err := fetchCAcerts(ns.mgr, caProviders)
+	certs, err := ns.fetchCAcerts(caProviders)
 	if err != nil {
 		return nil, err
 	}
@@ -250,17 +251,17 @@ func (ns *nodeServer) NodeStageVolume(ctx context.Context, req *csi.NodeStageVol
 	return &csi.NodeStageVolumeResponse{}, nil
 }
 
-func fetchCAcerts(mgr ctrl.Manager, caProviders []api.CAProviderClass) (map[uint64]*x509.Certificate, error) {
+func (ns *nodeServer) fetchCAcerts(caProviders []api.CAProviderClass) (map[uint64]*x509.Certificate, error) {
 	certs := map[uint64]*x509.Certificate{}
 	for _, pc := range caProviders {
 		for _, typedRef := range pc.Spec.Refs {
 			ref := api.RefFrom(pc, typedRef)
-			obj, err := clientx.GetForGVK(context.TODO(), mgr.GetClient(), ref.GroupKind().WithVersion(""), ref.ObjKey())
+			obj, err := clientx.GetForGVK(context.TODO(), ns.mgr.GetClient(), ref.GroupKind().WithVersion(""), ref.ObjKey())
 			if err != nil {
 				return nil, err
 			}
 
-			p, err := providers.NewCAProvider(mgr.GetClient(), ref, obj)
+			p, err := providers.NewCAProvider(ns.mgr.GetClient(), ns.opts, ref, obj)
 			if err != nil {
 				return nil, err
 			}
