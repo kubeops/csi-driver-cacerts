@@ -118,7 +118,7 @@ jobs:
       - name: Check out installer
         run: |
           cd ..
-          git clone https://github.com/kubevault/installer.git
+          git clone https://github.com/kubeops/installer.git
           cd installer
           git checkout master
 
