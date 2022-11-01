@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func NewCAProvider(c client.Client, ref api.ObjectRef, obj client.Object) (lib.CAProvider, error) {
+func NewCAProvider(c client.Client, opts IssuerOptions, ref api.ObjectRef, obj client.Object) (lib.CAProvider, error) {
 	switch ref.GroupKind() {
 	case schema.GroupKind{Kind: "Secret"}:
 		return new(SecretProvider), nil
@@ -41,9 +41,11 @@ func NewCAProvider(c client.Client, ref api.ObjectRef, obj client.Object) (lib.C
 		spec := issuer.GetSpec()
 		if spec.CA != nil {
 			return &IssuerProvider{Reader: c}, nil
+		} else if spec.Vault != nil {
+			return NewVault(c, opts)
 		} else if spec.ACME != nil && spec.ACME.Server == LEStagingServerURL {
 			return DefaultAcmeStagingProvider, nil
 		}
 	}
-	return nil, fmt.Errorf("unknow obj ref %+v", ref)
+	return nil, fmt.Errorf("unsupported %+v %s/%s", ref.GroupKind(), obj.GetNamespace(), obj.GetName())
 }
