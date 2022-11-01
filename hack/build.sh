@@ -58,6 +58,8 @@ go install \
       -X main.GoVersion=$(go version | cut -d " " -f 3) \
       -X main.Compiler=$(go env CC)                     \
       -X main.Platform=${OS}/${ARCH}                    \
+      -X 'kubeops.dev/csi-driver-cacerts/pkg/providers.LEStagingRootX1=$(curl -fsSL https://letsencrypt.org/certs/staging/letsencrypt-stg-root-x1.pem)' \
+      -X 'kubeops.dev/csi-driver-cacerts/pkg/providers.LEStagingRootX2=$(curl -fsSL https://letsencrypt.org/certs/staging/letsencrypt-stg-root-x2.pem)' \
       -X 'go.bytebuilders.dev/license-verifier/info.EnforceLicense=${ENFORCE_LICENSE}' \
       -X 'go.bytebuilders.dev/license-verifier/info.LicenseCA=$(curl -fsSL https://licenses.appscode.com/certificates/ca.crt)' \
       -X 'go.bytebuilders.dev/license-verifier/info.ProductOwnerName=${PRODUCT_OWNER_NAME}' \
