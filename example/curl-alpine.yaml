@@ -46,3 +46,22 @@ spec:
       volumeAttributes:
         os: alpine
         caProviderClasses: ca-provider
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: curl-alpine-noca
+  namespace: demo
+spec:
+  containers:
+  - name: main
+    # image: curlimages/curl
+    # env:
+    # - name: CURL_CA_BUNDLE
+    #   value: /etc/ssl/cert.pem
+    image: appscode/curl:alpine
+    command:
+    - sleep
+    - "3600"

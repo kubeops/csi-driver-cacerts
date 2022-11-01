@@ -42,3 +42,18 @@ spec:
       volumeAttributes:
         os: fedora
         caProviderClasses: ca-provider
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: curl-fedora-noca
+  namespace: demo
+spec:
+  containers:
+  - name: main
+    image: fedora
+    command:
+    - sleep
+    - "3600"

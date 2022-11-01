@@ -50,6 +50,16 @@ nginx-594bc689d7-74gtr   1/1     Running   0          23h
 
 $ kubectl exec -it curl -- bash
 root@curl:/# curl https://nginx.demo.svc.cluster.local
+
+
+$ kubectl exec -it curl-alpine-noca -- sh
+/ # curl https://nginx.demo.svc.cluster.local
+curl: (60) SSL certificate problem: unable to get local issuer certificate
+More details here: https://curl.se/docs/sslcerts.html
+
+curl failed to verify the legitimacy of the server and therefore could not
+establish a secure connection to it. To learn more about this situation and
+how to fix it, please visit the web page mentioned above.
 ```
 
 ## CA cert location by OS Distribution

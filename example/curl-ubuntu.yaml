@@ -42,3 +42,18 @@ spec:
       volumeAttributes:
         os: ubuntu
         caProviderClasses: ca-provider
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: curl-ubuntu-noca
+  namespace: demo
+spec:
+  containers:
+  - name: main
+    image: appscode/curl:ubuntu
+    command:
+    - sleep
+    - "3600"

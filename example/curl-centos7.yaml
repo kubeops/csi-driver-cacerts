@@ -42,3 +42,18 @@ spec:
       volumeAttributes:
         os: centos
         caProviderClasses: ca-provider
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: curl-centos7-noca
+  namespace: demo
+spec:
+  containers:
+  - name: main
+    image: centos:7
+    command:
+    - sleep
+    - "3600"

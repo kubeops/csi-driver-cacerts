@@ -42,3 +42,18 @@ spec:
       volumeAttributes:
         os: debian
         caProviderClasses: ca-provider
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: curl-debian-noca
+  namespace: demo
+spec:
+  containers:
+  - name: main
+    image: appscode/curl:debian
+    command:
+    - sleep
+    - "3600"
