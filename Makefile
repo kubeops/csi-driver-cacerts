@@ -14,30 +14,29 @@
 
 SHELL=/bin/bash -o pipefail
 
+PRODUCT_OWNER_NAME := appscode
+PRODUCT_NAME       := csi-driver-cacerts
+ENFORCE_LICENSE    ?=
+
 GO_PKG   := kubeops.dev
 REPO     := $(notdir $(shell pwd))
 BIN      := csi-driver-cacerts
 COMPRESS ?= no
 
-CRD_OPTIONS          ?= "crd:maxDescLen=0,generateEmbeddedObjectMeta=true,allowDangerousTypes=true"
+# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
+CRD_OPTIONS          ?= "crd:crdVersions={v1},allowDangerousTypes=true"
 CODE_GENERATOR_IMAGE ?= appscode/gengo:release-1.25
 API_GROUPS           ?= cacerts:v1alpha1
 
 # Where to push the docker image.
 REGISTRY ?= appscode
+SRC_REG  ?=
 
 # This version-strategy uses git tags to set the version string
 git_branch       := $(shell git rev-parse --abbrev-ref HEAD)
 git_tag          := $(shell git describe --exact-match --abbrev=0 2>/dev/null || echo "")
 commit_hash      := $(shell git rev-parse --verify HEAD)
-
-OS ?= $(shell uname -s)
-ifeq ($(OS),Linux)
-  commit_timestamp := $(shell date --date="@$$(git show -s --format=%ct)" --utc +%FT%T)
-endif
-ifeq ($(OS),Darwin)
-  commit_timestamp := $(shell date -r "$$(git show -s --format=%ct)" -u +%FT%T)
-endif
+commit_timestamp := $(shell date --date="@$$(git show -s --format=%ct)" --utc +%FT%T)
 
 VERSION          := $(shell git describe --tags --always --dirty)
 version_strategy := commit_hash
@@ -140,40 +139,27 @@ version:
 	@echo ::set-output name=commit_hash::$(commit_hash)
 	@echo ::set-output name=commit_timestamp::$(commit_timestamp)
 
-# Generate a typed clientset
+# Generate code for Kubernetes types
 .PHONY: clientset
 clientset:
-	@docker run --rm                                     \
-		-u $$(id -u):$$(id -g)                           \
-		-v /tmp:/.cache                                  \
-		-v $$(pwd):$(DOCKER_REPO_ROOT)                   \
-		-w $(DOCKER_REPO_ROOT)                           \
-		--env HTTP_PROXY=$(HTTP_PROXY)                   \
-		--env HTTPS_PROXY=$(HTTPS_PROXY)                 \
-		$(CODE_GENERATOR_IMAGE)                          \
-		/go/src/k8s.io/code-generator/generate-groups.sh \
-			all                                          \
-			$(GO_PKG)/$(REPO)/client                     \
-			$(GO_PKG)/$(REPO)/apis                       \
-			"$(API_GROUPS)"                              \
+	@docker run --rm                                            \
+		-u $$(id -u):$$(id -g)                                    \
+		-v /tmp:/.cache                                           \
+		-v $$(pwd):$(DOCKER_REPO_ROOT)                            \
+		-w $(DOCKER_REPO_ROOT)                                    \
+		--env HTTP_PROXY=$(HTTP_PROXY)                            \
+		--env HTTPS_PROXY=$(HTTPS_PROXY)                          \
+		$(CODE_GENERATOR_IMAGE)                                   \
+		/go/src/k8s.io/code-generator/generate-groups.sh          \
+			"deepcopy,defaulter"                                    \
+			$(GO_PKG)/$(REPO)/client                                \
+			$(GO_PKG)/$(REPO)/apis                                  \
+			"$(API_GROUPS)"                                         \
 			--go-header-file "./hack/license/go.txt"
 
 # Generate openapi schema
 .PHONY: openapi
 openapi: $(addprefix openapi-, $(subst :,_, $(API_GROUPS)))
-	@echo "Generating openapi/swagger.json"
-	@docker run --rm                                     \
-		-u $$(id -u):$$(id -g)                           \
-		-v /tmp:/.cache                                  \
-		-v $$(pwd):$(DOCKER_REPO_ROOT)                   \
-		-w $(DOCKER_REPO_ROOT)                           \
-		--env HTTP_PROXY=$(HTTP_PROXY)                   \
-		--env HTTPS_PROXY=$(HTTPS_PROXY)                 \
-	    --env                             \
-	    --env GOFLAGS="-mod=vendor"                      \
-		$(BUILD_IMAGE)                                   \
-		go run hack/gencrd/main.go
-
 openapi-%:
 	@echo "Generating openapi schema for $(subst _,/,$*)"
 	@mkdir -p .config/api-rules
@@ -188,7 +174,7 @@ openapi-%:
 		openapi-gen                                      \
 			--v 1 --logtostderr                          \
 			--go-header-file "./hack/license/go.txt" \
-			--input-dirs "$(GO_PKG)/$(REPO)/apis/$(subst _,/,$*),k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/util/intstr,k8s.io/apimachinery/pkg/version,k8s.io/api/core/v1,k8s.io/api/apps/v1,kmodules.xyz/client-go/api/v1" \
+			--input-dirs "$(GO_PKG)/$(REPO)/apis/$(subst _,/,$*),k8s.io/apimachinery/pkg/apis/meta/v1,k8s.io/apimachinery/pkg/api/resource,k8s.io/apimachinery/pkg/runtime,k8s.io/apimachinery/pkg/util/intstr,k8s.io/apimachinery/pkg/version,k8s.io/api/core/v1,k8s.io/api/apps/v1,k8s.io/api/rbac/v1,kmodules.xyz/client-go/api/v1" \
 			--output-package "$(GO_PKG)/$(REPO)/apis/$(subst _,/,$*)" \
 			--report-filename .config/api-rules/violation_exceptions.list
 
@@ -196,7 +182,7 @@ openapi-%:
 .PHONY: gen-crds
 gen-crds:
 	@echo "Generating CRD manifests"
-	@docker run --rm                        \
+	@docker run --rm	                    \
 		-u $$(id -u):$$(id -g)              \
 		-v /tmp:/.cache                     \
 		-v $$(pwd):$(DOCKER_REPO_ROOT)      \
@@ -230,7 +216,7 @@ label-crds: $(BUILD_DIRS)
 manifests: gen-crds patch-crds label-crds
 
 .PHONY: gen
-gen: clientset manifests # openapi
+gen: clientset manifests openapi
 
 fmt: $(BUILD_DIRS)
 	@docker run                                                 \
@@ -276,6 +262,9 @@ $(OUTBIN): .go/$(OUTBIN).stamp
 	    --env HTTPS_PROXY=$(HTTPS_PROXY)                        \
 	    $(BUILD_IMAGE)                                          \
 	    /bin/bash -c "                                          \
+	        PRODUCT_OWNER_NAME=$(PRODUCT_OWNER_NAME)            \
+	        PRODUCT_NAME=$(PRODUCT_NAME)                        \
+	        ENFORCE_LICENSE=$(ENFORCE_LICENSE)                  \
 	        ARCH=$(ARCH)                                        \
 	        OS=$(OS)                                            \
 	        VERSION=$(VERSION)                                  \
@@ -312,6 +301,7 @@ $(OUTBIN): .go/$(OUTBIN).stamp
 DOTFILE_IMAGE    = $(subst /,_,$(IMAGE))-$(TAG)
 
 container: bin/.container-$(DOTFILE_IMAGE)-PROD bin/.container-$(DOTFILE_IMAGE)-DBG
+ifeq (,$(SRC_REG))
 bin/.container-$(DOTFILE_IMAGE)-%: bin/$(OS)_$(ARCH)/$(BIN) $(DOCKERFILE_%)
 	@echo "container: $(IMAGE):$(TAG_$*)"
 	@sed                                    \
@@ -320,9 +310,15 @@ bin/.container-$(DOTFILE_IMAGE)-%: bin/$(OS)_$(ARCH)/$(BIN) $(DOCKERFILE_%)
 		-e 's|{ARG_OS}|$(OS)|g'             \
 		-e 's|{ARG_FROM}|$(BASEIMAGE_$*)|g' \
 		$(DOCKERFILE_$*) > bin/.dockerfile-$*-$(OS)_$(ARCH)
-	@DOCKER_CLI_EXPERIMENTAL=enabled docker buildx build --platform $(OS)/$(ARCH) --load --pull -t $(IMAGE):$(TAG_$*) -f bin/.dockerfile-$*-$(OS)_$(ARCH) .
+	@docker buildx build --platform $(OS)/$(ARCH) --load --pull -t $(IMAGE):$(TAG_$*) -f bin/.dockerfile-$*-$(OS)_$(ARCH) .
 	@docker images -q $(IMAGE):$(TAG_$*) > $@
 	@echo
+else
+bin/.container-$(DOTFILE_IMAGE)-%:
+	@echo "container: $(IMAGE):$(TAG_$*)"
+	@docker tag $(SRC_REG)/$(BIN):$(TAG_$*) $(IMAGE):$(TAG_$*)
+	@echo
+endif
 
 push: bin/.push-$(DOTFILE_IMAGE)-PROD bin/.push-$(DOTFILE_IMAGE)-DBG
 bin/.push-$(DOTFILE_IMAGE)-%: bin/.container-$(DOTFILE_IMAGE)-%
@@ -333,8 +329,8 @@ bin/.push-$(DOTFILE_IMAGE)-%: bin/.container-$(DOTFILE_IMAGE)-%
 .PHONY: docker-manifest
 docker-manifest: docker-manifest-PROD docker-manifest-DBG
 docker-manifest-%:
-	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest create -a $(IMAGE):$(VERSION_$*) $(foreach PLATFORM,$(DOCKER_PLATFORMS),$(IMAGE):$(VERSION_$*)_$(subst /,_,$(PLATFORM)))
-	DOCKER_CLI_EXPERIMENTAL=enabled docker manifest push $(IMAGE):$(VERSION_$*)
+	docker manifest create -a $(IMAGE):$(VERSION_$*) $(foreach PLATFORM,$(DOCKER_PLATFORMS),$(IMAGE):$(VERSION_$*)_$(subst /,_,$(PLATFORM)))
+	docker manifest push $(IMAGE):$(VERSION_$*)
 
 .PHONY: test
 test: unit-tests e2e-tests
@@ -422,7 +418,6 @@ lint: $(BUILD_DIRS)
 	    -v $$(pwd)/.go/cache:/.cache                            \
 	    --env HTTP_PROXY=$(HTTP_PROXY)                          \
 	    --env HTTPS_PROXY=$(HTTPS_PROXY)                        \
-	    --env                                    \
 	    --env GOFLAGS="-mod=vendor"                             \
 	    $(BUILD_IMAGE)                                          \
 	    golangci-lint run --enable $(ADDTL_LINTERS) --timeout=10m --skip-files="generated.*\.go$\" --skip-dirs-use-default --skip-dirs=client,vendor
@@ -446,7 +441,7 @@ install:
 	helm upgrade -i cert-manager-csi-driver-cacerts charts/cert-manager-csi-driver-cacerts --wait \
 		--namespace=$(KUBE_NAMESPACE) --create-namespace \
 		--set driver.registry=$(REGISTRY) \
-		--set driver.tag=$(TAG) \
+		--set driver.tag=$(TAG_PROD) \
 		--set driver.pullPolicy=$(IMAGE_PULL_POLICY) \
 		$(IMAGE_PULL_SECRETS); \
 
@@ -490,7 +485,7 @@ add-license:
 		--env HTTP_PROXY=$(HTTP_PROXY)                   \
 		--env HTTPS_PROXY=$(HTTPS_PROXY)                 \
 		$(BUILD_IMAGE)                                   \
-		ltag -t "./hack/license" --excludes "vendor contrib" -v
+		ltag -t "./hack/license" --excludes "vendor contrib bin" -v
 
 .PHONY: check-license
 check-license:
@@ -503,7 +498,7 @@ check-license:
 		--env HTTP_PROXY=$(HTTP_PROXY)                   \
 		--env HTTPS_PROXY=$(HTTPS_PROXY)                 \
 		$(BUILD_IMAGE)                                   \
-		ltag -t "./hack/license" --excludes "vendor contrib" --check -v
+		ltag -t "./hack/license" --excludes "vendor contrib bin" --check -v
 
 .PHONY: ci
 ci: check-license lint build #unit-tests cover verify
@@ -549,11 +544,11 @@ run:
 .PHONY: push-to-kind
 push-to-kind: container
 	@echo "Loading docker image into kind cluster...."
-	@kind load docker-image $(IMAGE):$(TAG)
+	@kind load docker-image $(IMAGE):$(TAG_PROD)
 	@echo "Image has been pushed successfully into kind cluster."
 
 .PHONY: deploy-to-kind
 deploy-to-kind: push-to-kind install
 
 .PHONY: deploy
-deploy: push install
+deploy: uninstall push install

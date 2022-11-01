@@ -17,7 +17,7 @@
 set -eou pipefail
 
 GOPATH=$(go env GOPATH)
-REPO_ROOT="$GOPATH/src/kubedb.dev/apimachinery"
+REPO_ROOT="$GOPATH/src/kubeops.dev/csi-driver-cacerts"
 
 pushd $REPO_ROOT
 

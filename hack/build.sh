@@ -35,6 +35,17 @@ export GOOS="${OS}"
 export GO111MODULE=on
 export GOFLAGS="-mod=vendor"
 
+ENFORCE_LICENSE=${ENFORCE_LICENSE:-}
+if [ ! -z "${git_tag:-}" ]; then
+    ENFORCE_LICENSE=true
+fi
+if [ "$ENFORCE_LICENSE" != "true" ]; then
+    ENFORCE_LICENSE=false
+fi
+
+# ref: https://medium.com/golangspec/blocks-in-go-2f68768868f6
+# ref: https://dave.cheney.net/2020/05/02/mid-stack-inlining-in-go
+# -gcflags="all=-N -l" \
 go install \
     -installsuffix "static" \
     -ldflags "                                          \
@@ -47,5 +58,9 @@ go install \
       -X main.GoVersion=$(go version | cut -d " " -f 3) \
       -X main.Compiler=$(go env CC)                     \
       -X main.Platform=${OS}/${ARCH}                    \
+      -X 'go.bytebuilders.dev/license-verifier/info.EnforceLicense=${ENFORCE_LICENSE}' \
+      -X 'go.bytebuilders.dev/license-verifier/info.LicenseCA=$(curl -fsSL https://licenses.appscode.com/certificates/ca.crt)' \
+      -X 'go.bytebuilders.dev/license-verifier/info.ProductOwnerName=${PRODUCT_OWNER_NAME}' \
+      -X 'go.bytebuilders.dev/license-verifier/info.ProductName=${PRODUCT_NAME}' \
     " \
     ./...
