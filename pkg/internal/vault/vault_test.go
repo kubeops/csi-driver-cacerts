@@ -880,6 +880,7 @@ func TestNewConfig(t *testing.T) {
 				}),
 			),
 			expectedErr: nil,
+			//nolint:staticcheck
 			checkFunc: func(cfg *vault.Config) error {
 				testCA := x509.NewCertPool()
 				testCA.AppendCertsFromPEM([]byte(testLeafCertificate))

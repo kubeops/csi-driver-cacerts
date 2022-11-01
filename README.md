@@ -65,7 +65,9 @@ You can find more detailed examples in the examples folder.
 ```
 $ helm repo add appscode https://charts.appscode.com/stable/
 $ helm repo update
-$ helm upgrade -i cert-manager-csi-driver-cacerts appscode/cert-manager-csi-driver-cacerts -n cert-manager --wait
+$ helm upgrade -i \
+  cert-manager-csi-driver-cacerts appscode/cert-manager-csi-driver-cacerts \
+  -n cert-manager --wait
 ```
 
 ## OS Distribution Support
