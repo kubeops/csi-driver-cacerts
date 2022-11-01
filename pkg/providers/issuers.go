@@ -38,8 +38,11 @@ func NewCAProvider(c client.Client, ref api.ObjectRef, obj client.Object) (lib.C
 		if !ok {
 			return nil, fmt.Errorf("unknow obj ref %+v", ref)
 		}
-		if issuer.GetSpec().CA != nil {
+		spec := issuer.GetSpec()
+		if spec.CA != nil {
 			return &IssuerProvider{Reader: c}, nil
+		} else if spec.ACME != nil && spec.ACME.Server == LEStagingServerURL {
+			return DefaultAcmeStagingProvider, nil
 		}
 	}
 	return nil, fmt.Errorf("unknow obj ref %+v", ref)
