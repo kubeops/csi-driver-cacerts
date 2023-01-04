@@ -10,7 +10,7 @@ Projects like [cert-manager](https://github.com/cert-manager/cert-manager) and [
 
 - Say, the client application is talking to multiple servers each of which are using their own ca certificate issued certs. Now, users have to combine those separate ca certificates into one pem formatted file and pass that to the client application.
 
-- Java uses its own special file format for ca certificates. Users have to have a cli called `keytool` to add these custom ca certificates and pass that to Java applications. This was one of the original motivating use-cases for this csi driver. As an example, take a look at the Graylog documentation on how to [add a self-signed certificate to the JVM trust store](https://archivedocs.graylog.org/en/2.4/pages/configuration/https.html#adding-a-self-signed-certificate-to-the-jvm-trust-store).
+- Java uses its own special file format for ca certificates. Users have to use a cli called `keytool` to add these custom ca certificates and pass that to Java applications. This was one of the original motivating use-cases for this csi driver. As an example, take a look at the Graylog documentation on how to [add a self-signed certificate to the JVM trust store](https://archivedocs.graylog.org/en/2.4/pages/configuration/https.html#adding-a-self-signed-certificate-to-the-jvm-trust-store).
 
 The UX in these types of use-cases can be simplified dramatically by using a Ephemeral CSI driver that augments the default trusted certificates of the operating system with the custom ca certificates required by a given pod. This CSI driver does exactly that.
 
