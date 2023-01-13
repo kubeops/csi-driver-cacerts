@@ -440,6 +440,7 @@ install:
 	@cd ../installer; \
 	helm upgrade -i cert-manager-csi-driver-cacerts charts/cert-manager-csi-driver-cacerts --wait \
 		--namespace=$(KUBE_NAMESPACE) --create-namespace \
+		--set registryFQDN="" \
 		--set driver.registry=$(REGISTRY) \
 		--set driver.tag=$(TAG_PROD) \
 		--set driver.pullPolicy=$(IMAGE_PULL_POLICY) \
