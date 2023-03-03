@@ -13,7 +13,7 @@ require (
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.4.0
 	github.com/stretchr/testify v1.8.1
 	github.com/zeebo/xxh3 v1.0.2
-	golang.org/x/net v0.1.0
+	golang.org/x/net v0.7.0
 	gomodules.xyz/atomic-writer v0.0.2
 	gomodules.xyz/cert v1.5.0
 	gomodules.xyz/sets/kubernetes v0.2.1
@@ -24,9 +24,14 @@ require (
 	k8s.io/klog/v2 v2.80.1
 	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280
 	k8s.io/mount-utils v0.25.3
-	kmodules.xyz/client-go v0.25.9
+	kmodules.xyz/client-go v0.25.14
 	sigs.k8s.io/controller-runtime v0.13.0
 	sigs.k8s.io/yaml v1.3.0
+)
+
+require (
+	github.com/google/go-containerregistry v0.12.1 // indirect
+	github.com/opencontainers/go-digest v1.0.0 // indirect
 )
 
 require (
@@ -97,7 +102,7 @@ require (
 	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/oklog/run v1.0.0 // indirect
 	github.com/pierrec/lz4 v2.5.2+incompatible // indirect
-	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pkg/errors v0.9.1
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.13.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
@@ -111,11 +116,11 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	go.uber.org/zap v1.21.0 // indirect
-	golang.org/x/crypto v0.0.0-20220924013350-4ba4fb4dd9e7 // indirect
-	golang.org/x/oauth2 v0.0.0-20220909003341-f21342109be1 // indirect
-	golang.org/x/sys v0.1.0 // indirect
-	golang.org/x/term v0.1.0 // indirect
-	golang.org/x/text v0.4.0 // indirect
+	golang.org/x/crypto v0.6.0 // indirect
+	golang.org/x/oauth2 v0.1.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/term v0.5.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	gomodules.xyz/sets v0.2.1 // indirect
