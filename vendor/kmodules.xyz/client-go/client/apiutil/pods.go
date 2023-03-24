@@ -30,10 +30,31 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func CollectImageInfo(kc client.Client, pod *core.Pod, images map[string]kmapi.ImageInfo) (map[string]kmapi.ImageInfo, error) {
-	lineage, err := DetectLineage(context.TODO(), kc, pod)
-	if err != nil {
-		return images, err
+func CollectImageInfo(kc client.Client, pod *core.Pod, images map[string]kmapi.ImageInfo, fullLineage bool) (map[string]kmapi.ImageInfo, error) {
+	var lineage []kmapi.ObjectInfo
+
+	var err error
+	if fullLineage {
+		lineage, err = DetectLineage(context.TODO(), kc, pod)
+		if err != nil {
+			return images, err
+		}
+	} else {
+		lineage = []kmapi.ObjectInfo{
+			{
+				Resource: kmapi.ResourceID{
+					Group:   "",
+					Version: "v1",
+					Name:    "pods",
+					Kind:    "Pod",
+					Scope:   kmapi.NamespaceScoped,
+				},
+				Ref: kmapi.ObjectReference{
+					Namespace: pod.Namespace,
+					Name:      pod.Name,
+				},
+			},
+		}
 	}
 
 	refs := map[string][]string{}
@@ -68,9 +89,10 @@ func CollectImageInfo(kc client.Client, pod *core.Pod, images map[string]kmapi.I
 			iu = kmapi.ImageInfo{
 				Image:    ref,
 				Lineages: nil,
-				PullSecrets: &kmapi.PullSecrets{
-					Namespace: pod.Namespace,
-					Refs:      pod.Spec.ImagePullSecrets,
+				PullCredentials: &kmapi.PullCredentials{
+					Namespace:          pod.Namespace,
+					SecretRefs:         pod.Spec.ImagePullSecrets,
+					ServiceAccountName: pod.Spec.ServiceAccountName,
 				},
 			}
 		}
@@ -84,16 +106,17 @@ func CollectImageInfo(kc client.Client, pod *core.Pod, images map[string]kmapi.I
 	return images, nil
 }
 
-func CollectPullSecrets(pod *core.Pod, refs map[string]kmapi.PullSecrets) (map[string]kmapi.PullSecrets, error) {
+func CollectPullCredentials(pod *core.Pod, refs map[string]kmapi.PullCredentials) (map[string]kmapi.PullCredentials, error) {
 	for _, c := range pod.Spec.Containers {
 		si, sid := findContainerStatus(c.Name, pod.Status.ContainerStatuses)
 		ref, err := GetImageRef(c.Image, si, sid)
 		if err != nil {
 			return refs, err
 		}
-		refs[ref] = kmapi.PullSecrets{
-			Namespace: pod.Namespace,
-			Refs:      pod.Spec.ImagePullSecrets,
+		refs[ref] = kmapi.PullCredentials{
+			Namespace:          pod.Namespace,
+			SecretRefs:         pod.Spec.ImagePullSecrets,
+			ServiceAccountName: pod.Spec.ServiceAccountName,
 		}
 	}
 	for _, c := range pod.Spec.InitContainers {
@@ -102,9 +125,10 @@ func CollectPullSecrets(pod *core.Pod, refs map[string]kmapi.PullSecrets) (map[s
 		if err != nil {
 			return refs, err
 		}
-		refs[ref] = kmapi.PullSecrets{
-			Namespace: pod.Namespace,
-			Refs:      pod.Spec.ImagePullSecrets,
+		refs[ref] = kmapi.PullCredentials{
+			Namespace:          pod.Namespace,
+			SecretRefs:         pod.Spec.ImagePullSecrets,
+			ServiceAccountName: pod.Spec.ServiceAccountName,
 		}
 	}
 	for _, c := range pod.Spec.EphemeralContainers {
@@ -113,9 +137,10 @@ func CollectPullSecrets(pod *core.Pod, refs map[string]kmapi.PullSecrets) (map[s
 		if err != nil {
 			return refs, err
 		}
-		refs[ref] = kmapi.PullSecrets{
-			Namespace: pod.Namespace,
-			Refs:      pod.Spec.ImagePullSecrets,
+		refs[ref] = kmapi.PullCredentials{
+			Namespace:          pod.Namespace,
+			SecretRefs:         pod.Spec.ImagePullSecrets,
+			ServiceAccountName: pod.Spec.ServiceAccountName,
 		}
 	}
 

@@ -134,8 +134,8 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
-# github.com/google/go-containerregistry v0.12.1
-## explicit; go 1.17
+# github.com/google/go-containerregistry v0.13.0
+## explicit; go 1.18
 github.com/google/go-containerregistry/pkg/name
 # github.com/google/gofuzz v1.2.0
 ## explicit; go 1.12
@@ -331,7 +331,7 @@ github.com/onsi/gomega/types
 # github.com/opencontainers/go-digest v1.0.0
 ## explicit; go 1.13
 github.com/opencontainers/go-digest
-# github.com/pavlo-v-chernykh/keystore-go/v4 v4.4.0
+# github.com/pavlo-v-chernykh/keystore-go/v4 v4.4.1
 ## explicit; go 1.17
 github.com/pavlo-v-chernykh/keystore-go/v4
 # github.com/pierrec/lz4 v2.5.2+incompatible
@@ -410,7 +410,6 @@ golang.org/x/crypto/pbkdf2
 # golang.org/x/net v0.7.0
 ## explicit; go 1.17
 golang.org/x/net/context
-golang.org/x/net/context/ctxhttp
 golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
@@ -420,7 +419,7 @@ golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
 golang.org/x/net/trace
-# golang.org/x/oauth2 v0.1.0
+# golang.org/x/oauth2 v0.5.0
 ## explicit; go 1.17
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
@@ -985,7 +984,7 @@ k8s.io/utils/net
 k8s.io/utils/pointer
 k8s.io/utils/strings/slices
 k8s.io/utils/trace
-# kmodules.xyz/client-go v0.25.14
+# kmodules.xyz/client-go v0.25.19
 ## explicit; go 1.18
 kmodules.xyz/client-go
 kmodules.xyz/client-go/api/v1

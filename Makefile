@@ -29,7 +29,7 @@ CODE_GENERATOR_IMAGE ?= appscode/gengo:release-1.25
 API_GROUPS           ?= cacerts:v1alpha1
 
 # Where to push the docker image.
-REGISTRY ?= appscode
+REGISTRY ?= ghcr.io/appscode
 SRC_REG  ?=
 
 # This version-strategy uses git tags to set the version string
