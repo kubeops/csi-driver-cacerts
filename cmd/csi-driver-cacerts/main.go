@@ -32,6 +32,7 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/klog/v2/klogr"
 	ctrl "sigs.k8s.io/controller-runtime"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 )
 
 const (
@@ -66,15 +67,14 @@ func main() {
 	klog.InitFlags(nil)
 	flag.Parse()
 
-	ctrl.SetLogger(klogr.New())
+	ctrl.SetLogger(klogr.New()) // nolint:staticcheck
 
 	cfg := ctrl.GetConfigOrDie()
 	cfg.QPS = float32(*qps)
 	cfg.Burst = *burst
 	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme:                 scheme,
-		MetricsBindAddress:     *metricsAddr,
-		Port:                   9443,
+		Metrics:                metricsserver.Options{BindAddress: *metricsAddr},
 		HealthProbeBindAddress: "", // csi driver runs its own probe sidecar
 		LeaderElection:         false,
 		LeaderElectionID:       "4ab6f271.cacerts.csi.cert-manager.io",

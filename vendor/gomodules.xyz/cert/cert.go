@@ -29,10 +29,10 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"math/big"
 	"net"
+	"os"
 	"path"
 	"strings"
 	"time"
@@ -49,6 +49,14 @@ type Config struct {
 	Organization []string
 	AltNames     AltNames
 	Usages       []x509.ExtKeyUsage
+	Duration     time.Duration
+}
+
+func (cfg Config) GetDuration() time.Duration {
+	if cfg.Duration > 0 {
+		return cfg.Duration
+	}
+	return duration365d
 }
 
 // AltNames contains the domain names and IP addresses that will be added
@@ -74,7 +82,7 @@ func NewSelfSignedCACert(cfg Config, key crypto.Signer) (*x509.Certificate, erro
 			Organization: cfg.Organization,
 		},
 		NotBefore:             now.UTC(),
-		NotAfter:              now.Add(duration365d * 10).UTC(),
+		NotAfter:              now.Add(cfg.GetDuration() * 10).UTC(),
 		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
 		BasicConstraintsValid: true,
 		IsCA:                  true,
@@ -109,7 +117,7 @@ func NewSignedCert(cfg Config, key crypto.Signer, caCert *x509.Certificate, caKe
 		IPAddresses:  cfg.AltNames.IPs,
 		SerialNumber: serial,
 		NotBefore:    caCert.NotBefore,
-		NotAfter:     time.Now().Add(duration365d).UTC(),
+		NotAfter:     time.Now().Add(cfg.GetDuration()).UTC(),
 		KeyUsage:     x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:  cfg.Usages,
 	}
@@ -162,9 +170,9 @@ func GenerateSelfSignedCertKeyWithFixtures(host string, alternateIPs []net.IP, a
 	certFixturePath := path.Join(fixtureDirectory, baseName+".crt")
 	keyFixturePath := path.Join(fixtureDirectory, baseName+".key")
 	if len(fixtureDirectory) > 0 {
-		cert, err := ioutil.ReadFile(certFixturePath)
+		cert, err := os.ReadFile(certFixturePath)
 		if err == nil {
-			key, err := ioutil.ReadFile(keyFixturePath)
+			key, err := os.ReadFile(keyFixturePath)
 			if err == nil {
 				return cert, key, nil
 			}
@@ -249,10 +257,10 @@ func GenerateSelfSignedCertKeyWithFixtures(host string, alternateIPs []net.IP, a
 	}
 
 	if len(fixtureDirectory) > 0 {
-		if err := ioutil.WriteFile(certFixturePath, certBuffer.Bytes(), 0644); err != nil {
+		if err := os.WriteFile(certFixturePath, certBuffer.Bytes(), 0644); err != nil {
 			return nil, nil, fmt.Errorf("failed to write cert fixture to %s: %v", certFixturePath, err)
 		}
-		if err := ioutil.WriteFile(keyFixturePath, keyBuffer.Bytes(), 0644); err != nil {
+		if err := os.WriteFile(keyFixturePath, keyBuffer.Bytes(), 0644); err != nil {
 			return nil, nil, fmt.Errorf("failed to write key fixture to %s: %v", certFixturePath, err)
 		}
 	}

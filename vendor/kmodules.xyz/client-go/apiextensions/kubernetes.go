@@ -58,7 +58,7 @@ func RegisterCRDs(client crd_cs.Interface, crds []*CustomResourceDefinition) err
 			},
 			metav1.UpdateOptions{},
 		)
-		if err != nil {
+		if err != nil && !kerr.IsAlreadyExists(err) {
 			return err
 		}
 	}
@@ -66,7 +66,7 @@ func RegisterCRDs(client crd_cs.Interface, crds []*CustomResourceDefinition) err
 }
 
 func WaitForCRDReady(client crd_cs.Interface, crds []*CustomResourceDefinition) error {
-	err := wait.Poll(3*time.Second, 5*time.Minute, func() (bool, error) {
+	err := wait.PollUntilContextTimeout(context.Background(), 3*time.Second, 5*time.Minute, false, func(ctx context.Context) (bool, error) {
 		for _, crd := range crds {
 			var gvr schema.GroupVersionResource
 			if crd.V1 != nil {
@@ -108,4 +108,24 @@ func WaitForCRDReady(client crd_cs.Interface, crds []*CustomResourceDefinition) 
 		return true, nil
 	})
 	return errors.Wrap(err, "timed out waiting for CRD")
+}
+
+func RemoveCRDs(client crd_cs.Interface, crds []*CustomResourceDefinition) error {
+	for _, crd := range crds {
+		// Use crd v1 for k8s >= 1.16, if available
+		// ref: https://github.com/kubernetes/kubernetes/issues/91395
+		if crd.V1 == nil {
+			gvr := schema.GroupVersionResource{
+				Group:    crd.V1beta1.Spec.Group,
+				Version:  crd.V1beta1.Spec.Versions[0].Name,
+				Resource: crd.V1beta1.Spec.Names.Plural,
+			}
+			return fmt.Errorf("missing V1 definition for %s", gvr)
+		}
+		err := client.ApiextensionsV1().CustomResourceDefinitions().Delete(context.TODO(), crd.V1.Name, metav1.DeleteOptions{})
+		if err != nil && !kerr.IsNotFound(err) {
+			return err
+		}
+	}
+	return nil
 }
