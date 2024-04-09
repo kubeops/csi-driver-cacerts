@@ -17,6 +17,7 @@ limitations under the License.
 package cacerts
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -29,7 +30,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
@@ -45,10 +45,8 @@ var (
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
-
-	RunSpecsWithDefaultAndCustomReporters(t,
-		"Controller Suite",
-		[]Reporter{printer.NewlineReporter{}})
+	fmt.Fprintf(GinkgoWriter, "Starting e2e suite\n")
+	RunSpecs(t, "Controller Suite")
 }
 
 var _ = BeforeSuite(func() {

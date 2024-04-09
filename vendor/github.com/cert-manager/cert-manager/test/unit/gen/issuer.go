@@ -226,6 +226,16 @@ func SetIssuerACMELastRegisteredEmail(email string) IssuerModifier {
 	}
 }
 
+func SetIssuerACMELastPrivateKeyHash(privateKeyHash string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		status := iss.GetStatus()
+		if status.ACME == nil {
+			status.ACME = &cmacme.ACMEIssuerStatus{}
+		}
+		status.ACME.LastPrivateKeyHash = privateKeyHash
+	}
+}
+
 func SetIssuerCA(a v1.CAIssuer) IssuerModifier {
 	return func(iss v1.GenericIssuer) {
 		iss.GetSpec().CA = &a
@@ -325,7 +335,27 @@ func SetIssuerVaultAppRoleAuth(keyName, approleName, roleId, path string) Issuer
 	}
 }
 
-func SetIssuerVaultKubernetesAuth(keyName, secretServiceAccount, role, path string) IssuerModifier {
+func SetIssuerVaultKubernetesAuthSecret(secretKey, secretName, vaultRole, vaultPath string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.Vault == nil {
+			spec.Vault = &v1.VaultIssuer{}
+		}
+		spec.Vault.Auth.Kubernetes = &v1.VaultKubernetesAuth{
+			Path: vaultPath,
+			SecretRef: cmmeta.SecretKeySelector{
+				Key: secretKey,
+				LocalObjectReference: cmmeta.LocalObjectReference{
+					Name: secretName,
+				},
+			},
+			Role: vaultRole,
+		}
+
+	}
+}
+
+func SetIssuerVaultKubernetesAuthServiceAccount(serviceAccount, role, path string) IssuerModifier {
 	return func(iss v1.GenericIssuer) {
 		spec := iss.GetSpec()
 		if spec.Vault == nil {
@@ -333,17 +363,15 @@ func SetIssuerVaultKubernetesAuth(keyName, secretServiceAccount, role, path stri
 		}
 		spec.Vault.Auth.Kubernetes = &v1.VaultKubernetesAuth{
 			Path: path,
-			SecretRef: cmmeta.SecretKeySelector{
-				Key: keyName,
-				LocalObjectReference: cmmeta.LocalObjectReference{
-					Name: secretServiceAccount,
-				},
-			},
 			Role: role,
+			ServiceAccountRef: &v1.ServiceAccountRef{
+				Name: serviceAccount,
+			},
 		}
 
 	}
 }
+
 func SetIssuerSelfSigned(a v1.SelfSignedIssuer) IssuerModifier {
 	return func(iss v1.GenericIssuer) {
 		iss.GetSpec().SelfSigned = &a

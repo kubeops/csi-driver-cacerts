@@ -28,16 +28,15 @@ import (
 	"fmt"
 	"math/big"
 	"net"
+	"net/netip"
 	"net/url"
 	"strings"
-	"time"
 
-	"github.com/cert-manager/cert-manager/internal/controller/feature"
 	apiutil "github.com/cert-manager/cert-manager/pkg/api/util"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	utilfeature "github.com/cert-manager/cert-manager/pkg/util/feature"
 )
 
+// DEPRECATED: this function will be removed in a future release.
 func IPAddressesForCertificate(crt *v1.Certificate) []net.IP {
 	var ipAddresses []net.IP
 	var ip net.IP
@@ -50,6 +49,7 @@ func IPAddressesForCertificate(crt *v1.Certificate) []net.IP {
 	return ipAddresses
 }
 
+// DEPRECATED: this function will be removed in a future release.
 func URIsForCertificate(crt *v1.Certificate) ([]*url.URL, error) {
 	uris, err := URLsFromStrings(crt.Spec.URIs)
 	if err != nil {
@@ -59,6 +59,7 @@ func URIsForCertificate(crt *v1.Certificate) ([]*url.URL, error) {
 	return uris, nil
 }
 
+// DEPRECATED: this function will be removed in a future release.
 func DNSNamesForCertificate(crt *v1.Certificate) ([]string, error) {
 	_, err := URLsFromStrings(crt.Spec.DNSNames)
 	if err != nil {
@@ -68,6 +69,7 @@ func DNSNamesForCertificate(crt *v1.Certificate) ([]string, error) {
 	return crt.Spec.DNSNames, nil
 }
 
+// DEPRECATED: this function will be removed in a future release.
 func URLsFromStrings(urlStrs []string) ([]*url.URL, error) {
 	var urls []*url.URL
 	var errs []string
@@ -89,12 +91,30 @@ func URLsFromStrings(urlStrs []string) ([]*url.URL, error) {
 	return urls, nil
 }
 
+// IPAddressesToString converts a slice of IP addresses to strings, which can be useful for
+// printing a list of addresses but MUST NOT be used for comparing two slices of IP addresses.
 func IPAddressesToString(ipAddresses []net.IP) []string {
 	var ipNames []string
 	for _, ip := range ipAddresses {
 		ipNames = append(ipNames, ip.String())
 	}
 	return ipNames
+}
+
+func IPAddressesFromStrings(ipStrings []string) ([]net.IP, error) {
+	var ipAddresses []net.IP
+	for _, ipString := range ipStrings {
+		ip, err := netip.ParseAddr(ipString)
+		if err != nil || ip.Zone() != "" {
+			return nil, err
+		}
+		addr := ip.AsSlice()
+		if len(addr) == 0 {
+			return nil, fmt.Errorf("failed to parse IP address %q", ipString)
+		}
+		ipAddresses = append(ipAddresses, net.IP(addr))
+	}
+	return ipAddresses, nil
 }
 
 func URLsToString(uris []*url.URL) []string {
@@ -110,23 +130,10 @@ func URLsToString(uris []*url.URL) []string {
 	return uriStrs
 }
 
-func removeDuplicates(in []string) []string {
-	var found []string
-Outer:
-	for _, i := range in {
-		for _, i2 := range found {
-			if i2 == i {
-				continue Outer
-			}
-		}
-		found = append(found, i)
-	}
-	return found
-}
-
 // OrganizationForCertificate will return the Organization to set for the
 // Certificate resource.
 // If an Organization is not specifically set, a default will be used.
+// DEPRECATED: this function will be removed in a future release.
 func OrganizationForCertificate(crt *v1.Certificate) []string {
 	if crt.Spec.Subject == nil {
 		return nil
@@ -145,14 +152,18 @@ func SubjectForCertificate(crt *v1.Certificate) v1.X509Subject {
 
 var serialNumberLimit = new(big.Int).Lsh(big.NewInt(1), 128)
 
-func BuildKeyUsages(usages []v1.KeyUsage, isCA bool) (ku x509.KeyUsage, eku []x509.ExtKeyUsage, err error) {
+func KeyUsagesForCertificateOrCertificateRequest(usages []v1.KeyUsage, isCA bool) (ku x509.KeyUsage, eku []x509.ExtKeyUsage, err error) {
 	var unk []v1.KeyUsage
 	if isCA {
 		ku |= x509.KeyUsageCertSign
 	}
+
+	// If no usages are specified, default to the ones specified in the
+	// Kubernetes API.
 	if len(usages) == 0 {
-		usages = append(usages, v1.DefaultKeyUsages()...)
+		usages = v1.DefaultKeyUsages()
 	}
+
 	for _, u := range usages {
 		if kuse, ok := apiutil.KeyUsageType(u); ok {
 			ku |= kuse
@@ -175,32 +186,126 @@ func BuildCertManagerKeyUsages(ku x509.KeyUsage, eku []x509.ExtKeyUsage) []v1.Ke
 	return usages
 }
 
+type generateCSROptions struct {
+	EncodeBasicConstraintsInRequest bool
+	EncodeNameConstraints           bool
+	EncodeOtherNames                bool
+	UseLiteralSubject               bool
+}
+
+type GenerateCSROption func(*generateCSROptions)
+
+// WithEncodeBasicConstraintsInRequest determines whether the BasicConstraints
+// extension should be encoded in the CSR.
+// NOTE: this is a temporary option that will be removed in a future release.
+func WithEncodeBasicConstraintsInRequest(encode bool) GenerateCSROption {
+	return func(o *generateCSROptions) {
+		o.EncodeBasicConstraintsInRequest = encode
+	}
+}
+
+func WithNameConstraints(enabled bool) GenerateCSROption {
+	return func(o *generateCSROptions) {
+		o.EncodeNameConstraints = enabled
+	}
+}
+
+func WithOtherNames(enabled bool) GenerateCSROption {
+	return func(o *generateCSROptions) {
+		o.EncodeOtherNames = enabled
+	}
+}
+
+func WithUseLiteralSubject(useLiteralSubject bool) GenerateCSROption {
+	return func(o *generateCSROptions) {
+		o.UseLiteralSubject = useLiteralSubject
+	}
+}
+
 // GenerateCSR will generate a new *x509.CertificateRequest template to be used
 // by issuers that utilise CSRs to obtain Certificates.
 // The CSR will not be signed, and should be passed to either EncodeCSR or
 // to the x509.CreateCertificateRequest function.
-func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
-	commonName, err := extractCommonName(crt.Spec)
+func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.CertificateRequest, error) {
+	opts := &generateCSROptions{
+		EncodeBasicConstraintsInRequest: false,
+		EncodeNameConstraints:           false,
+		EncodeOtherNames:                false,
+		UseLiteralSubject:               false,
+	}
+	for _, opt := range optFuncs {
+		opt(opts)
+	}
+
+	// Generate the Subject field for the CSR.
+	var commonName string
+	var rdnSubject pkix.RDNSequence
+	if opts.UseLiteralSubject && len(crt.Spec.LiteralSubject) > 0 {
+		subjectRDNSequence, err := UnmarshalSubjectStringToRDNSequence(crt.Spec.LiteralSubject)
+		if err != nil {
+			return nil, err
+		}
+
+		commonName = ExtractCommonNameFromRDNSequence(subjectRDNSequence)
+		rdnSubject = subjectRDNSequence
+	} else {
+		subject := SubjectForCertificate(crt)
+
+		commonName = crt.Spec.CommonName
+		rdnSubject = pkix.Name{
+			Country:            subject.Countries,
+			Organization:       subject.Organizations,
+			OrganizationalUnit: subject.OrganizationalUnits,
+			Locality:           subject.Localities,
+			Province:           subject.Provinces,
+			StreetAddress:      subject.StreetAddresses,
+			PostalCode:         subject.PostalCodes,
+			SerialNumber:       subject.SerialNumber,
+			CommonName:         commonName,
+		}.ToRDNSequence()
+	}
+
+	// Generate the SANs for the CSR.
+	ipAddresses, err := IPAddressesFromStrings(crt.Spec.IPAddresses)
 	if err != nil {
 		return nil, err
 	}
 
-	iPAddresses := IPAddressesForCertificate(crt)
-	organization := OrganizationForCertificate(crt)
-	subject := SubjectForCertificate(crt)
-
-	dnsNames, err := DNSNamesForCertificate(crt)
-	if err != nil {
-		return nil, err
+	sans := GeneralNames{
+		RFC822Names:                crt.Spec.EmailAddresses,
+		DNSNames:                   crt.Spec.DNSNames,
+		UniformResourceIdentifiers: crt.Spec.URIs,
+		IPAddresses:                ipAddresses,
 	}
 
-	uriNames, err := URIsForCertificate(crt)
-	if err != nil {
-		return nil, err
+	if opts.EncodeOtherNames {
+		for _, otherName := range crt.Spec.OtherNames {
+			oid, err := ParseObjectIdentifier(otherName.OID)
+			if err != nil {
+				return nil, err
+			}
+
+			value, err := MarshalUniversalValue(UniversalValue{
+				UTF8String: otherName.UTF8Value,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			sans.OtherNames = append(sans.OtherNames, OtherName{
+				TypeID: oid,
+				Value: asn1.RawValue{
+					Tag:        0,
+					Class:      asn1.ClassContextSpecific,
+					IsCompound: true,
+					Bytes:      value,
+				},
+			})
+		}
 	}
 
-	if len(commonName) == 0 && len(dnsNames) == 0 && len(uriNames) == 0 && len(crt.Spec.EmailAddresses) == 0 && len(crt.Spec.IPAddresses) == 0 {
-		return nil, fmt.Errorf("no common name, DNS name, URI SAN, or Email SAN specified on certificate")
+	if len(commonName) == 0 && sans.Empty() {
+		return nil, fmt.Errorf("no common name, DNS name, URI SAN, Email SAN, IP or OtherName SAN specified on certificate")
 	}
 
 	pubKeyAlgo, sigAlgo, err := SignatureAlgorithm(crt)
@@ -208,260 +313,98 @@ func GenerateCSR(crt *v1.Certificate) (*x509.CertificateRequest, error) {
 		return nil, err
 	}
 
+	asn1Subject, err := MarshalRDNSequenceToRawDERBytes(rdnSubject)
+	if err != nil {
+		return nil, err
+	}
+
 	var extraExtensions []pkix.Extension
+
+	if !sans.Empty() {
+		sanExtension, err := MarshalSANs(sans, !IsASN1SubjectEmpty(asn1Subject))
+		if err != nil {
+			return nil, err
+		}
+		extraExtensions = append(extraExtensions, sanExtension)
+	}
+
 	if crt.Spec.EncodeUsagesInRequest == nil || *crt.Spec.EncodeUsagesInRequest {
-		extraExtensions, err = buildKeyUsagesExtensionsForCertificate(crt)
+		ku, ekus, err := KeyUsagesForCertificateOrCertificateRequest(crt.Spec.Usages, crt.Spec.IsCA)
+		if err != nil {
+			return nil, fmt.Errorf("failed to build key usages: %w", err)
+		}
+
+		usage, err := MarshalKeyUsage(ku)
+		if err != nil {
+			return nil, fmt.Errorf("failed to asn1 encode usages: %w", err)
+		}
+		extraExtensions = append(extraExtensions, usage)
+
+		// Only add extended usages if they are specified.
+		if len(ekus) > 0 {
+			extendedUsages, err := MarshalExtKeyUsage(ekus, nil)
+			if err != nil {
+				return nil, fmt.Errorf("failed to asn1 encode extended usages: %w", err)
+			}
+			extraExtensions = append(extraExtensions, extendedUsages)
+		}
+	}
+
+	// NOTE(@inteon): opts.EncodeBasicConstraintsInRequest is a temporary solution and will
+	// be removed/ replaced in a future release.
+	if opts.EncodeBasicConstraintsInRequest {
+		basicExtension, err := MarshalBasicConstraints(crt.Spec.IsCA, nil)
 		if err != nil {
 			return nil, err
 		}
+		extraExtensions = append(extraExtensions, basicExtension)
 	}
 
-	if isLiteralCertificateSubjectEnabled() && len(crt.Spec.LiteralSubject) > 0 {
-		rawSubject, err := ParseSubjectStringToRawDerBytes(crt.Spec.LiteralSubject)
-		if err != nil {
-			return nil, err
+	if opts.EncodeNameConstraints && crt.Spec.NameConstraints != nil {
+		nameConstraints := &NameConstraints{}
+
+		if crt.Spec.NameConstraints.Permitted != nil {
+			nameConstraints.PermittedDNSDomains = crt.Spec.NameConstraints.Permitted.DNSDomains
+			nameConstraints.PermittedIPRanges, err = parseCIDRs(crt.Spec.NameConstraints.Permitted.IPRanges)
+			if err != nil {
+				return nil, err
+			}
+			nameConstraints.PermittedEmailAddresses = crt.Spec.NameConstraints.Permitted.EmailAddresses
+			nameConstraints.ExcludedURIDomains = crt.Spec.NameConstraints.Permitted.URIDomains
 		}
 
-		return &x509.CertificateRequest{
-			// Version 0 is the only one defined in the PKCS#10 standard, RFC2986.
-			// This value isn't used by Go at the time of writing.
-			// https://datatracker.ietf.org/doc/html/rfc2986#section-4
-			Version:            0,
-			SignatureAlgorithm: sigAlgo,
-			PublicKeyAlgorithm: pubKeyAlgo,
-			RawSubject:         rawSubject,
-			DNSNames:           dnsNames,
-			IPAddresses:        iPAddresses,
-			URIs:               uriNames,
-			EmailAddresses:     crt.Spec.EmailAddresses,
-			ExtraExtensions:    extraExtensions,
-		}, nil
-	} else {
-		return &x509.CertificateRequest{
-			// Version 0 is the only one defined in the PKCS#10 standard, RFC2986.
-			// This value isn't used by Go at the time of writing.
-			// https://datatracker.ietf.org/doc/html/rfc2986#section-4
-			Version:            0,
-			SignatureAlgorithm: sigAlgo,
-			PublicKeyAlgorithm: pubKeyAlgo,
+		if crt.Spec.NameConstraints.Excluded != nil {
+			nameConstraints.ExcludedDNSDomains = crt.Spec.NameConstraints.Excluded.DNSDomains
+			nameConstraints.ExcludedIPRanges, err = parseCIDRs(crt.Spec.NameConstraints.Excluded.IPRanges)
+			if err != nil {
+				return nil, err
+			}
+			nameConstraints.ExcludedEmailAddresses = crt.Spec.NameConstraints.Excluded.EmailAddresses
+			nameConstraints.ExcludedURIDomains = crt.Spec.NameConstraints.Excluded.URIDomains
+		}
 
-			Subject: pkix.Name{
-				Country:            subject.Countries,
-				Organization:       organization,
-				OrganizationalUnit: subject.OrganizationalUnits,
-				Locality:           subject.Localities,
-				Province:           subject.Provinces,
-				StreetAddress:      subject.StreetAddresses,
-				PostalCode:         subject.PostalCodes,
-				SerialNumber:       subject.SerialNumber,
-				CommonName:         commonName,
-			},
-			DNSNames:        dnsNames,
-			IPAddresses:     iPAddresses,
-			URIs:            uriNames,
-			EmailAddresses:  crt.Spec.EmailAddresses,
-			ExtraExtensions: extraExtensions,
-		}, nil
-	}
+		if !nameConstraints.IsEmpty() {
+			extension, err := MarshalNameConstraints(nameConstraints, crt.Spec.NameConstraints.Critical)
+			if err != nil {
+				return nil, err
+			}
 
-}
-
-func buildKeyUsagesExtensionsForCertificate(crt *v1.Certificate) ([]pkix.Extension, error) {
-	ku, ekus, err := BuildKeyUsages(crt.Spec.Usages, crt.Spec.IsCA)
-	if err != nil {
-		return nil, fmt.Errorf("failed to build key usages: %w", err)
-	}
-
-	usage, err := buildASN1KeyUsageRequest(ku)
-	if err != nil {
-		return nil, fmt.Errorf("failed to asn1 encode usages: %w", err)
-	}
-	asn1ExtendedUsages := []asn1.ObjectIdentifier{}
-	for _, eku := range ekus {
-		if oid, ok := OIDFromExtKeyUsage(eku); ok {
-			asn1ExtendedUsages = append(asn1ExtendedUsages, oid)
+			extraExtensions = append(extraExtensions, extension)
 		}
 	}
 
-	extraExtensions := []pkix.Extension{usage}
-	if len(ekus) > 0 {
-		extendedUsage := pkix.Extension{
-			Id: OIDExtensionExtendedKeyUsage,
-		}
-		extendedUsage.Value, err = asn1.Marshal(asn1ExtendedUsages)
-		if err != nil {
-			return nil, fmt.Errorf("failed to asn1 encode extended usages: %w", err)
-		}
-
-		extraExtensions = append(extraExtensions, extendedUsage)
-	}
-	return extraExtensions, nil
-}
-
-// GenerateTemplate will create a x509.Certificate for the given Certificate resource.
-// This should create a Certificate template that is equivalent to the CertificateRequest
-// generated by GenerateCSR.
-// The PublicKey field must be populated by the caller.
-func GenerateTemplate(crt *v1.Certificate) (*x509.Certificate, error) {
-	commonName, err := extractCommonName(crt.Spec)
-	if err != nil {
-		return nil, err
-	}
-
-	dnsNames := crt.Spec.DNSNames
-	ipAddresses := IPAddressesForCertificate(crt)
-	organization := OrganizationForCertificate(crt)
-	subject := SubjectForCertificate(crt)
-	uris, err := URLsFromStrings(crt.Spec.URIs)
-	if err != nil {
-		return nil, err
-	}
-	keyUsages, extKeyUsages, err := BuildKeyUsages(crt.Spec.Usages, crt.Spec.IsCA)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(commonName) == 0 && len(dnsNames) == 0 && len(ipAddresses) == 0 && len(uris) == 0 && len(crt.Spec.EmailAddresses) == 0 {
-		return nil, fmt.Errorf("no common name or subject alt names requested on certificate")
-	}
-
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate serial number: %s", err.Error())
-	}
-
-	certDuration := apiutil.DefaultCertDuration(crt.Spec.Duration)
-
-	pubKeyAlgo, _, err := SignatureAlgorithm(crt)
-	if err != nil {
-		return nil, err
-	}
-
-	if isLiteralCertificateSubjectEnabled() && len(crt.Spec.LiteralSubject) > 0 {
-		rawSubject, err := ParseSubjectStringToRawDerBytes(crt.Spec.LiteralSubject)
-		if err != nil {
-			return nil, err
-		}
-
-		return &x509.Certificate{
-			// Version must be 2 according to RFC5280.
-			// A version value of 2 confusingly means version 3.
-			// This value isn't used by Go at the time of writing.
-			// https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.1
-			Version:               2,
-			BasicConstraintsValid: true,
-			SerialNumber:          serialNumber,
-			PublicKeyAlgorithm:    pubKeyAlgo,
-			IsCA:                  crt.Spec.IsCA,
-			RawSubject:            rawSubject,
-			NotBefore:             time.Now(),
-			NotAfter:              time.Now().Add(certDuration),
-			// see http://golang.org/pkg/crypto/x509/#KeyUsage
-			KeyUsage:       keyUsages,
-			ExtKeyUsage:    extKeyUsages,
-			DNSNames:       dnsNames,
-			IPAddresses:    ipAddresses,
-			URIs:           uris,
-			EmailAddresses: crt.Spec.EmailAddresses,
-		}, nil
-	} else {
-
-		return &x509.Certificate{
-			// Version must be 2 according to RFC5280.
-			// A version value of 2 confusingly means version 3.
-			// This value isn't used by Go at the time of writing.
-			// https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.1
-			Version:               2,
-			BasicConstraintsValid: true,
-			SerialNumber:          serialNumber,
-			PublicKeyAlgorithm:    pubKeyAlgo,
-			IsCA:                  crt.Spec.IsCA,
-			Subject: pkix.Name{
-				Country:            subject.Countries,
-				Organization:       organization,
-				OrganizationalUnit: subject.OrganizationalUnits,
-				Locality:           subject.Localities,
-				Province:           subject.Provinces,
-				StreetAddress:      subject.StreetAddresses,
-				PostalCode:         subject.PostalCodes,
-				SerialNumber:       subject.SerialNumber,
-				CommonName:         commonName,
-			},
-			NotBefore: time.Now(),
-			NotAfter:  time.Now().Add(certDuration),
-			// see http://golang.org/pkg/crypto/x509/#KeyUsage
-			KeyUsage:       keyUsages,
-			ExtKeyUsage:    extKeyUsages,
-			DNSNames:       dnsNames,
-			IPAddresses:    ipAddresses,
-			URIs:           uris,
-			EmailAddresses: crt.Spec.EmailAddresses,
-		}, nil
-	}
-}
-
-// GenerateTemplate will create a x509.Certificate for the given
-// CertificateRequest resource
-func GenerateTemplateFromCertificateRequest(cr *v1.CertificateRequest) (*x509.Certificate, error) {
-	certDuration := apiutil.DefaultCertDuration(cr.Spec.Duration)
-	keyUsage, extKeyUsage, err := BuildKeyUsages(cr.Spec.Usages, cr.Spec.IsCA)
-	if err != nil {
-		return nil, err
-	}
-	return GenerateTemplateFromCSRPEMWithUsages(cr.Spec.Request, certDuration, cr.Spec.IsCA, keyUsage, extKeyUsage)
-}
-
-func GenerateTemplateFromCSRPEM(csrPEM []byte, duration time.Duration, isCA bool) (*x509.Certificate, error) {
-	var (
-		ku  x509.KeyUsage
-		eku []x509.ExtKeyUsage
-	)
-	return GenerateTemplateFromCSRPEMWithUsages(csrPEM, duration, isCA, ku, eku)
-}
-
-func GenerateTemplateFromCSRPEMWithUsages(csrPEM []byte, duration time.Duration, isCA bool, keyUsage x509.KeyUsage, extKeyUsage []x509.ExtKeyUsage) (*x509.Certificate, error) {
-	block, _ := pem.Decode(csrPEM)
-	if block == nil {
-		return nil, errors.New("failed to decode csr")
-	}
-
-	csr, err := x509.ParseCertificateRequest(block.Bytes)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := csr.CheckSignature(); err != nil {
-		return nil, err
-	}
-
-	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate serial number: %s", err.Error())
-	}
-
-	return &x509.Certificate{
-		// Version must be 2 according to RFC5280.
-		// A version value of 2 confusingly means version 3.
+	cr := &x509.CertificateRequest{
+		// Version 0 is the only one defined in the PKCS#10 standard, RFC2986.
 		// This value isn't used by Go at the time of writing.
-		// https://datatracker.ietf.org/doc/html/rfc5280#section-4.1.2.1
-		Version:               2,
-		BasicConstraintsValid: true,
-		SerialNumber:          serialNumber,
-		PublicKeyAlgorithm:    csr.PublicKeyAlgorithm,
-		PublicKey:             csr.PublicKey,
-		IsCA:                  isCA,
-		Subject:               csr.Subject,
-		RawSubject:            csr.RawSubject,
-		NotBefore:             time.Now(),
-		NotAfter:              time.Now().Add(duration),
-		// see http://golang.org/pkg/crypto/x509/#KeyUsage
-		KeyUsage:       keyUsage,
-		ExtKeyUsage:    extKeyUsage,
-		DNSNames:       csr.DNSNames,
-		IPAddresses:    csr.IPAddresses,
-		EmailAddresses: csr.EmailAddresses,
-		URIs:           csr.URIs,
-	}, nil
+		// https://datatracker.ietf.org/doc/html/rfc2986#section-4
+		Version:            0,
+		SignatureAlgorithm: sigAlgo,
+		PublicKeyAlgorithm: pubKeyAlgo,
+		RawSubject:         asn1Subject,
+		ExtraExtensions:    extraExtensions,
+	}
+
+	return cr, nil
 }
 
 // SignCertificate returns a signed *x509.Certificate given a template
@@ -472,7 +415,6 @@ func GenerateTemplateFromCSRPEMWithUsages(csrPEM []byte, duration time.Duration,
 // which can be used for reading the encoded values.
 func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, publicKey crypto.PublicKey, signerKey interface{}) ([]byte, *x509.Certificate, error) {
 	derBytes, err := x509.CreateCertificate(rand.Reader, template, issuerCert, publicKey, signerKey)
-
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating x509 certificate: %s", err.Error())
 	}
@@ -615,32 +557,4 @@ func SignatureAlgorithm(crt *v1.Certificate) (x509.PublicKeyAlgorithm, x509.Sign
 		return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported algorithm specified: %s. should be either 'ecdsa' or 'rsa", crt.Spec.PrivateKey.Algorithm)
 	}
 	return pubKeyAlgo, sigAlgo, nil
-}
-
-func extractCommonName(spec v1.CertificateSpec) (string, error) {
-	var commonName = spec.CommonName
-	if isLiteralCertificateSubjectEnabled() && len(spec.LiteralSubject) > 0 {
-		commonName = ""
-		sequence, err := ParseSubjectStringToRdnSequence(spec.LiteralSubject)
-		if err != nil {
-			return "", err
-		}
-
-		for _, rdns := range sequence {
-			for _, atv := range rdns {
-				if atv.Type.Equal(OIDConstants.CommonName) {
-					if str, ok := atv.Value.(string); ok {
-						commonName = str
-					}
-				}
-			}
-		}
-	}
-
-	return commonName, nil
-
-}
-
-func isLiteralCertificateSubjectEnabled() bool {
-	return utilfeature.DefaultFeatureGate.Enabled(feature.LiteralCertificateSubject)
 }

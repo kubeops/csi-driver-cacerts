@@ -27,6 +27,9 @@ func Convert_v1alpha2_CertificateSpec_To_certmanager_CertificateSpec(in *Certifi
 		return err
 	}
 
+	out.EmailAddresses = in.EmailSANs
+	out.URIs = in.URISANs
+
 	if len(in.Organization) > 0 {
 		if out.Subject == nil {
 			out.Subject = &certmanager.X509Subject{}
@@ -68,6 +71,9 @@ func Convert_certmanager_CertificateSpec_To_v1alpha2_CertificateSpec(in *certman
 	if err := autoConvert_certmanager_CertificateSpec_To_v1alpha2_CertificateSpec(in, out, s); err != nil {
 		return err
 	}
+
+	out.EmailSANs = in.EmailAddresses
+	out.URISANs = in.URIs
 
 	if in.Subject != nil {
 		out.Organization = in.Subject.Organizations
@@ -124,4 +130,8 @@ func Convert_certmanager_CertificateRequestSpec_To_v1alpha2_CertificateRequestSp
 
 	out.CSRPEM = in.Request
 	return nil
+}
+
+func Convert_certmanager_VaultKubernetesAuth_To_v1alpha2_VaultKubernetesAuth(in *certmanager.VaultKubernetesAuth, out *VaultKubernetesAuth, s conversion.Scope) error {
+	return autoConvert_certmanager_VaultKubernetesAuth_To_v1alpha2_VaultKubernetesAuth(in, out, s)
 }

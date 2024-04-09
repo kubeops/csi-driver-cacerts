@@ -30,7 +30,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 // CAProviderClassReconciler reconciles a CAProviderClass object
@@ -59,9 +58,9 @@ func (r *CAProviderClassReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 // SetupWithManager sets up the controller with the Manager.
 func (r *CAProviderClassReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	mf := func(gk schema.GroupKind) handler.MapFunc {
-		return func(a client.Object) []reconcile.Request {
+		return func(ctx context.Context, a client.Object) []reconcile.Request {
 			providers := &api.CAProviderClassList{}
-			if err := r.List(context.Background(), providers); err != nil {
+			if err := r.List(ctx, providers); err != nil {
 				return nil
 			}
 			var req []reconcile.Request
@@ -98,8 +97,8 @@ func (r *CAProviderClassReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&api.CAProviderClass{}).
-		Watches(&source.Kind{Type: &core.Secret{}}, handler.EnqueueRequestsFromMapFunc(mf(schema.GroupKind{Group: "", Kind: "Secret"}))).
-		Watches(&source.Kind{Type: &cmapi.Issuer{}}, handler.EnqueueRequestsFromMapFunc(mf(schema.GroupKind{Group: cmapi.SchemeGroupVersion.Group, Kind: "Issuer"}))).
-		Watches(&source.Kind{Type: &cmapi.ClusterIssuer{}}, handler.EnqueueRequestsFromMapFunc(mf(schema.GroupKind{Group: cmapi.SchemeGroupVersion.Group, Kind: "ClusterIssuer"}))).
+		Watches(&core.Secret{}, handler.EnqueueRequestsFromMapFunc(mf(schema.GroupKind{Group: "", Kind: "Secret"}))).
+		Watches(&cmapi.Issuer{}, handler.EnqueueRequestsFromMapFunc(mf(schema.GroupKind{Group: cmapi.SchemeGroupVersion.Group, Kind: "Issuer"}))).
+		Watches(&cmapi.ClusterIssuer{}, handler.EnqueueRequestsFromMapFunc(mf(schema.GroupKind{Group: cmapi.SchemeGroupVersion.Group, Kind: "ClusterIssuer"}))).
 		Complete(r)
 }

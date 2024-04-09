@@ -25,7 +25,7 @@ COMPRESS ?= no
 
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS          ?= "crd:crdVersions={v1},allowDangerousTypes=true"
-CODE_GENERATOR_IMAGE ?= ghcr.io/appscode/gengo:release-1.25
+CODE_GENERATOR_IMAGE ?= ghcr.io/appscode/gengo:release-1.29
 API_GROUPS           ?= cacerts:v1alpha1
 
 # Where to push the docker image.
@@ -66,8 +66,8 @@ BIN_PLATFORMS    := $(DOCKER_PLATFORMS)
 OS   := $(if $(GOOS),$(GOOS),$(shell go env GOOS))
 ARCH := $(if $(GOARCH),$(GOARCH),$(shell go env GOARCH))
 
-BASEIMAGE_PROD   ?= gcr.io/distroless/static-debian11
-BASEIMAGE_DBG    ?= debian:bullseye
+BASEIMAGE_PROD   ?= gcr.io/distroless/static-debian12
+BASEIMAGE_DBG    ?= debian:bookworm
 
 IMAGE            := $(REGISTRY)/$(BIN)
 VERSION_PROD     := $(VERSION)
@@ -76,7 +76,7 @@ TAG              := $(VERSION)_$(OS)_$(ARCH)
 TAG_PROD         := $(TAG)
 TAG_DBG          := $(VERSION)-dbg_$(OS)_$(ARCH)
 
-GO_VERSION       ?= 1.20
+GO_VERSION       ?= 1.22
 BUILD_IMAGE      ?= ghcr.io/appscode/golang-dev:$(GO_VERSION)
 CHART_TEST_IMAGE ?= quay.io/helmpack/chart-testing:v3.5.1
 
@@ -402,7 +402,7 @@ e2e-tests: $(BUILD_DIRS)
 e2e-parallel:
 	@$(MAKE) e2e-tests GINKGO_ARGS="-p -stream --flakeAttempts=2" --no-print-directory
 
-ADDTL_LINTERS   := goconst,gofmt,goimports,unparam
+ADDTL_LINTERS   := gofmt,goimports,unparam
 
 .PHONY: lint
 lint: $(BUILD_DIRS)
