@@ -34,6 +34,7 @@ import (
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/pavlo-v-chernykh/keystore-go/v4"
+	"github.com/pkg/errors"
 	"github.com/zeebo/xxh3"
 	"golang.org/x/net/context"
 	atomic_writer "gomodules.xyz/atomic-writer"
@@ -331,22 +332,49 @@ func updateCACerts(certs map[uint64]*x509.Certificate, osFamily OsFamily, srcDir
 		return err
 	}
 
+	payload := map[string]atomic_writer.FileProjection{}
+	entries, err := os.ReadDir(srcDir)
+	if err != nil {
+		return errors.Wrap(err, "error reading directory "+srcDir)
+	}
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() ||
+			name == "ca-certificates.crt" ||
+			name == "ca-bundle.pem" {
+			continue
+		}
+
+		data, err := os.ReadFile(filepath.Join(srcDir, name))
+		if err != nil {
+			return err
+		}
+		payload[name] = atomic_writer.FileProjection{Data: data, Mode: 0o444}
+	}
+
 	var caBuf bytes.Buffer
 	caData, err := os.ReadFile(filepath.Join(srcDir, cacertsGeneric))
 	if err != nil {
 		return err
 	}
 	caBuf.Write(caData)
+
+	var pemBuf bytes.Buffer
 	for _, certId := range certIds {
 		ca := certs[certId]
 		block := pem.Block{
 			Type:  cert.CertificateBlockType,
 			Bytes: ca.Raw,
 		}
-		err := pem.Encode(&caBuf, &block)
+
+		pemBuf.Reset()
+		err := pem.Encode(&pemBuf, &block)
 		if err != nil {
 			return err
 		}
+		payload[fmt.Sprintf("%d.pem", certId)] = atomic_writer.FileProjection{Data: pemBuf.Bytes(), Mode: 0o444}
+
+		caBuf.Write(pemBuf.Bytes())
 	}
 
 	err = os.MkdirAll(targetDir, 0o755)
@@ -358,26 +386,26 @@ func updateCACerts(certs map[uint64]*x509.Certificate, osFamily OsFamily, srcDir
 		return err
 	}
 
-	var payload map[string]atomic_writer.FileProjection
+	var capayload map[string]atomic_writer.FileProjection
 	switch osFamily {
 	case OsFamilyDebian, OsFamilyUbuntu, OsFamilyAlpine:
-		payload = map[string]atomic_writer.FileProjection{
+		capayload = map[string]atomic_writer.FileProjection{
 			"ca-certificates.crt": {Data: caBuf.Bytes(), Mode: 0o444},
 			"java/cacerts":        {Data: javaBuf.Bytes(), Mode: 0o444},
 		}
 	case OsFamilyOpensuse:
-		payload = map[string]atomic_writer.FileProjection{
+		capayload = map[string]atomic_writer.FileProjection{
 			"ca-bundle.pem": {Data: caBuf.Bytes(), Mode: 0o444},
 			"java-cacerts":  {Data: javaBuf.Bytes(), Mode: 0o444},
 		}
 	case OsFamilyFedora, OsFamilyCentos, OsFamilyOracleLinux, OsFamilyRockyLinux:
-		payload = map[string]atomic_writer.FileProjection{
+		capayload = map[string]atomic_writer.FileProjection{
 			"pem/tls-ca-bundle.pem":       {Data: caBuf.Bytes(), Mode: 0o444},
 			"java/cacerts":                {Data: javaBuf.Bytes(), Mode: 0o444},
 			"openssl/ca-bundle.trust.crt": {Data: trsutData, Mode: 0o444},
 		}
 	case OsFamilyCentos6, OsFamilyOracleLinux6:
-		payload = map[string]atomic_writer.FileProjection{
+		capayload = map[string]atomic_writer.FileProjection{
 			"tls/cert.pem":                                   {Data: caBuf.Bytes(), Mode: 0o444},
 			"tls/certs/ca-bundle.crt":                        {Data: caBuf.Bytes(), Mode: 0o444},
 			"ca-trust/extracted/pem/tls-ca-bundle.pem":       {Data: caBuf.Bytes(), Mode: 0o444},
@@ -387,6 +415,10 @@ func updateCACerts(certs map[uint64]*x509.Certificate, osFamily OsFamily, srcDir
 			"tls/certs/ca-bundle.trust.crt":                  {Data: trsutData, Mode: 0o444},
 		}
 	}
+	for k, v := range capayload {
+		payload[k] = v
+	}
+
 	_, err = certWriter.Write(payload)
 	if err != nil {
 		return err
