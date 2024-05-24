@@ -388,7 +388,19 @@ func updateCACerts(certs map[uint64]*x509.Certificate, osFamily OsFamily, srcDir
 		case OsFamilyDebian, OsFamilyUbuntu, OsFamilyAlpine, OsFamilyOpensuse:
 			// https://www.openssl.org/docs/man3.0/man1/openssl-rehash.html
 			// https://chatgpt.com/share/dc051bec-7cc5-4ddf-82bf-6a0235efee48
-			payload[fmt.Sprintf("%s.0", hashCertificate(ca))] = atomic_writer.FileProjection{Data: pemBuf.Bytes(), Mode: 0o444}
+			hash := hashCertificate(ca)
+			seq := 0
+			for {
+				key := fmt.Sprintf("%s.%s", hash, seq)
+				_, found := payload[key]
+				if found {
+					seq++
+					continue
+				}
+				payload[key] = atomic_writer.FileProjection{Data: pemBuf.Bytes(), Mode: 0o444}
+				klog.Info("writing key=", key)
+				break
+			}
 		}
 
 		caBuf.Write(pemBuf.Bytes())
