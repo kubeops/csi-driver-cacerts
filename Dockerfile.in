@@ -19,6 +19,9 @@ FROM {ARG_FROM}
 
 LABEL org.opencontainers.image.source https://github.com/kubeops/csi-driver-cacerts
 
+RUN set -x \
+  && apk add --update ca-certificates
+
 ADD bin/{ARG_OS}_{ARG_ARCH}/{ARG_BIN} /{ARG_BIN}
 COPY --from=java /etc/ssl/certs/java/cacerts /etc/ssl/certs/java/cacerts
 COPY --from=centos /etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt /etc/ssl/certs/ca-bundle.trust.crt

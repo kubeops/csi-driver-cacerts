@@ -333,23 +333,27 @@ func updateCACerts(certs map[uint64]*x509.Certificate, osFamily OsFamily, srcDir
 	}
 
 	payload := map[string]atomic_writer.FileProjection{}
-	entries, err := os.ReadDir(srcDir)
-	if err != nil {
-		return errors.Wrap(err, "error reading directory "+srcDir)
-	}
-	for _, entry := range entries {
-		name := entry.Name()
-		if entry.IsDir() ||
-			name == "ca-certificates.crt" ||
-			name == "ca-bundle.pem" {
-			continue
-		}
 
-		data, err := os.ReadFile(filepath.Join(srcDir, name))
+	switch osFamily {
+	case OsFamilyDebian, OsFamilyUbuntu, OsFamilyAlpine, OsFamilyOpensuse:
+		entries, err := os.ReadDir(srcDir)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "error reading directory "+srcDir)
 		}
-		payload[name] = atomic_writer.FileProjection{Data: data, Mode: 0o444}
+		for _, entry := range entries {
+			name := entry.Name()
+			if entry.IsDir() ||
+				name == "ca-certificates.crt" ||
+				name == "ca-bundle.pem" {
+				continue
+			}
+
+			data, err := os.ReadFile(filepath.Join(srcDir, name))
+			if err != nil {
+				return err
+			}
+			payload[name] = atomic_writer.FileProjection{Data: data, Mode: 0o444}
+		}
 	}
 
 	var caBuf bytes.Buffer
@@ -372,7 +376,11 @@ func updateCACerts(certs map[uint64]*x509.Certificate, osFamily OsFamily, srcDir
 		if err != nil {
 			return err
 		}
-		payload[fmt.Sprintf("%d.pem", certId)] = atomic_writer.FileProjection{Data: pemBuf.Bytes(), Mode: 0o444}
+
+		switch osFamily {
+		case OsFamilyDebian, OsFamilyUbuntu, OsFamilyAlpine, OsFamilyOpensuse:
+			payload[fmt.Sprintf("%d.pem", certId)] = atomic_writer.FileProjection{Data: pemBuf.Bytes(), Mode: 0o444}
+		}
 
 		caBuf.Write(pemBuf.Bytes())
 	}
