@@ -18,7 +18,9 @@ package driver
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"crypto/x509"
+	"encoding/hex"
 	"encoding/pem"
 	"fmt"
 	"os"
@@ -252,6 +254,11 @@ func (ns *nodeServer) NodeStageVolume(ctx context.Context, req *csi.NodeStageVol
 	return &csi.NodeStageVolumeResponse{}, nil
 }
 
+func hashCertificate(cert *x509.Certificate) string {
+	hash := sha1.Sum(cert.RawSubject)
+	return hex.EncodeToString(hash[:])[:8]
+}
+
 func (ns *nodeServer) fetchCAcerts(caProviders []api.CAProviderClass) (map[uint64]*x509.Certificate, error) {
 	certs := map[uint64]*x509.Certificate{}
 	for _, pc := range caProviders {
@@ -379,7 +386,9 @@ func updateCACerts(certs map[uint64]*x509.Certificate, osFamily OsFamily, srcDir
 
 		switch osFamily {
 		case OsFamilyDebian, OsFamilyUbuntu, OsFamilyAlpine, OsFamilyOpensuse:
-			payload[fmt.Sprintf("%d.pem", certId)] = atomic_writer.FileProjection{Data: pemBuf.Bytes(), Mode: 0o444}
+			// https://www.openssl.org/docs/man3.0/man1/openssl-rehash.html
+			// https://chatgpt.com/share/dc051bec-7cc5-4ddf-82bf-6a0235efee48
+			payload[fmt.Sprintf("%s.0", hashCertificate(ca))] = atomic_writer.FileProjection{Data: pemBuf.Bytes(), Mode: 0o444}
 		}
 
 		caBuf.Write(pemBuf.Bytes())
