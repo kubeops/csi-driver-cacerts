@@ -56,8 +56,6 @@ var (
 )
 
 func init() {
-	_ = flag.Set("logtostderr", "true")
-
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(cmscheme.AddToScheme(scheme))
 	utilruntime.Must(api.AddToScheme(scheme))
