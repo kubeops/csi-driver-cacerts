@@ -22,6 +22,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -379,7 +380,18 @@ func updateCACerts(certs map[uint64]*x509.Certificate, osFamily OsFamily, srcDir
 
 		switch osFamily {
 		case OsFamilyDebian, OsFamilyUbuntu, OsFamilyAlpine, OsFamilyOpensuse:
-			payload[fmt.Sprintf("%d.pem", certId)] = atomic_writer.FileProjection{Data: pemBuf.Bytes(), Mode: 0o444}
+			hash := opensslHash(pemBuf.Bytes())
+			seq := 0
+			for {
+				key := fmt.Sprintf("%s.%d", hash, seq)
+				_, found := payload[key]
+				if found {
+					seq++
+					continue
+				}
+				payload[key] = atomic_writer.FileProjection{Data: pemBuf.Bytes(), Mode: 0o444}
+				break
+			}
 		}
 
 		caBuf.Write(pemBuf.Bytes())
@@ -432,4 +444,24 @@ func updateCACerts(certs map[uint64]*x509.Certificate, osFamily OsFamily, srcDir
 		return err
 	}
 	return nil
+}
+
+// https://www.openssl.org/docs/man3.0/man1/openssl-rehash.html
+// https://github.com/openssl/openssl/blob/05faa4ffee7f20fcee129f77d153f2dcc609bdc8/crypto/x509/x509_cmp.c#L289
+// https://github.com/openssl/openssl/blob/05faa4ffee7f20fcee129f77d153f2dcc609bdc8/crypto/x509/x_name.c#L310
+// https://stackoverflow.com/a/71004482/244009
+// https://stackoverflow.com/a/19972185/244009
+// Note: Could not write a Go program equivalent to the openssl command. So, just shelling out.
+func opensslHash(pemBytes []byte) string {
+	cmd := exec.Command("openssl", "x509", "-hash", "-noout")
+
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	cmd.Stdin = bytes.NewReader(pemBytes)
+
+	err := cmd.Run()
+	if err != nil {
+		panic(err)
+	}
+	return strings.TrimSpace(out.String())
 }
