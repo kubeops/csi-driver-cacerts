@@ -18,6 +18,7 @@ package driver
 
 import (
 	"bytes"
+	"crypto/md5"
 	"crypto/sha1"
 	"crypto/x509"
 	"encoding/hex"
@@ -254,11 +255,6 @@ func (ns *nodeServer) NodeStageVolume(ctx context.Context, req *csi.NodeStageVol
 	return &csi.NodeStageVolumeResponse{}, nil
 }
 
-func hashCertificate(cert *x509.Certificate) string {
-	hash := sha1.Sum(cert.RawSubject)
-	return hex.EncodeToString(hash[:])[:8]
-}
-
 func (ns *nodeServer) fetchCAcerts(caProviders []api.CAProviderClass) (map[uint64]*x509.Certificate, error) {
 	certs := map[uint64]*x509.Certificate{}
 	for _, pc := range caProviders {
@@ -388,19 +384,33 @@ func updateCACerts(certs map[uint64]*x509.Certificate, osFamily OsFamily, srcDir
 		case OsFamilyDebian, OsFamilyUbuntu, OsFamilyAlpine, OsFamilyOpensuse:
 			// https://www.openssl.org/docs/man3.0/man1/openssl-rehash.html
 			// https://chatgpt.com/share/dc051bec-7cc5-4ddf-82bf-6a0235efee48
-			hash := hashCertificate(ca)
-			seq := 0
-			for {
-				key := fmt.Sprintf("%s.%d", hash, seq)
-				_, found := payload[key]
-				if found {
-					seq++
-					continue
+			addPayload := func(ca *x509.Certificate, payload map[string]atomic_writer.FileProjection, hashCertificate func(cert *x509.Certificate) string) {
+				hash := hashCertificate(ca)
+				seq := 0
+				for {
+					key := fmt.Sprintf("%s.%d", hash, seq)
+					_, found := payload[key]
+					if found {
+						seq++
+						continue
+					}
+					payload[key] = atomic_writer.FileProjection{Data: pemBuf.Bytes(), Mode: 0o444}
+					klog.Info("writing key=", key)
+					break
 				}
-				payload[key] = atomic_writer.FileProjection{Data: pemBuf.Bytes(), Mode: 0o444}
-				klog.Info("writing key=", key)
-				break
 			}
+
+			// md5
+			addPayload(ca, payload, func(cert *x509.Certificate) string {
+				hash := md5.Sum(cert.RawSubject)
+				return hex.EncodeToString(hash[:])[:8]
+			})
+
+			// sha-1
+			addPayload(ca, payload, func(cert *x509.Certificate) string {
+				hash := sha1.Sum(cert.RawSubject)
+				return hex.EncodeToString(hash[:])[:8]
+			})
 		}
 
 		caBuf.Write(pemBuf.Bytes())
