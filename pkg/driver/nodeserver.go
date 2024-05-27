@@ -391,7 +391,7 @@ func updateCACerts(certs map[uint64]*x509.Certificate, osFamily OsFamily, srcDir
 			hash := hashCertificate(ca)
 			seq := 0
 			for {
-				key := fmt.Sprintf("%s.%s", hash, seq)
+				key := fmt.Sprintf("%s.%d", hash, seq)
 				_, found := payload[key]
 				if found {
 					seq++
