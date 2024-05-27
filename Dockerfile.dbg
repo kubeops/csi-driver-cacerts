@@ -21,7 +21,7 @@ LABEL org.opencontainers.image.source https://github.com/kubeops/csi-driver-cace
 
 RUN set -x \
   && apt-get update \
-  && apt-get install -y --no-install-recommends apt-transport-https ca-certificates
+  && apt-get install -y --no-install-recommends apt-transport-https ca-certificates openssl
 
 ADD bin/{ARG_OS}_{ARG_ARCH}/{ARG_BIN} /{ARG_BIN}
 COPY --from=java /etc/ssl/certs/java/cacerts /etc/ssl/certs/java/cacerts
