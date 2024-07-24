@@ -45,6 +45,22 @@ spec:
 
 ---
 
+# vcluster host pod
+
+# apiVersion: cacerts.csi.cert-manager.io/v1alpha1
+# kind: CAProviderClass
+# metadata:
+#   name: ca-provider
+#   namespace: ace
+# spec:
+#   refs:
+#   - apiGroup: ""
+#     kind: Secret
+#     namespace: ace
+#     name: ca
+
+---
+
 apiVersion: v1
 kind: Pod
 metadata:

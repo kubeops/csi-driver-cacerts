@@ -7,8 +7,8 @@ $ helm upgrade -i \
   cert-manager jetstack/cert-manager \
   --namespace cert-manager \
   --create-namespace \
-  --version v1.10.0 \
-  --set installCRDs=true
+  --version v1.15.1 \
+  --set crds.enabled=true
 
 $ helm upgrade -i \
   cert-manager-csi-driver jetstack/cert-manager-csi-driver \
