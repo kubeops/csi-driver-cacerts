@@ -26,6 +26,7 @@ import (
 
 type DefaultControllerServer struct {
 	Driver *CSIDriver
+	csi.UnimplementedControllerServer
 }
 
 func (cs *DefaultControllerServer) CreateVolume(ctx context.Context, req *csi.CreateVolumeRequest) (*csi.CreateVolumeResponse, error) {
@@ -37,6 +38,10 @@ func (cs *DefaultControllerServer) DeleteVolume(ctx context.Context, req *csi.De
 }
 
 func (cs *DefaultControllerServer) ControllerGetVolume(context.Context, *csi.ControllerGetVolumeRequest) (*csi.ControllerGetVolumeResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "")
+}
+
+func (cs *DefaultControllerServer) ControllerModifyVolume(ctx context.Context, req *csi.ControllerModifyVolumeRequest) (*csi.ControllerModifyVolumeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "")
 }
 

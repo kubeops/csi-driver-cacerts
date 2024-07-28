@@ -21,8 +21,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"errors"
-	"fmt"
-	"strings"
 
 	"github.com/go-ldap/ldap/v3"
 )
@@ -68,25 +66,32 @@ var attributeTypeNames = map[string][]int{
 }
 
 func UnmarshalSubjectStringToRDNSequence(subject string) (pkix.RDNSequence, error) {
-	if strings.Contains(subject, "=#") {
-		return nil, fmt.Errorf("unsupported distinguished name (DN) %q: notation does not support x509.subject identities containing \"=#\"", subject)
-	}
-
-	dns, err := ldap.ParseDN(subject)
+	dn, err := ldap.ParseDN(subject)
 	if err != nil {
 		return nil, err
 	}
 
 	// Traverse the parsed RDNSequence in REVERSE order as RDNs in String format are expected to be written in reverse order.
 	// Meaning, a string of "CN=Foo,OU=Bar,O=Baz" actually should have "O=Baz" as the first element in the RDNSequence.
-	rdns := make(pkix.RDNSequence, 0, len(dns.RDNs))
-	for i := range dns.RDNs {
-		ldapRelativeDN := dns.RDNs[len(dns.RDNs)-i-1]
+	rdns := make(pkix.RDNSequence, 0, len(dn.RDNs))
+	for i := range dn.RDNs {
+		ldapRelativeDN := dn.RDNs[len(dn.RDNs)-i-1]
 
 		atvs := make([]pkix.AttributeTypeAndValue, 0, len(ldapRelativeDN.Attributes))
 		for _, ldapATV := range ldapRelativeDN.Attributes {
+			oid, ok := attributeTypeNames[ldapATV.Type]
+			if !ok {
+				// If the attribute type is not known, we try to parse it as an OID.
+				// If it is not an OID, we set Type=nil
+
+				oid, err = ParseObjectIdentifier(ldapATV.Type)
+				if err != nil {
+					oid = nil
+				}
+			}
+
 			atvs = append(atvs, pkix.AttributeTypeAndValue{
-				Type:  attributeTypeNames[ldapATV.Type],
+				Type:  oid,
 				Value: ldapATV.Value,
 			})
 		}
@@ -131,14 +136,4 @@ func ExtractCommonNameFromRDNSequence(rdns pkix.RDNSequence) string {
 	}
 
 	return ""
-}
-
-// DEPRECATED: this function will be removed in a future release.
-func ParseSubjectStringToRawDERBytes(subject string) ([]byte, error) {
-	rdnSequence, err := UnmarshalSubjectStringToRDNSequence(subject)
-	if err != nil {
-		return nil, err
-	}
-
-	return MarshalRDNSequenceToRawDERBytes(rdnSequence)
 }

@@ -17,10 +17,11 @@ limitations under the License.
 package gen
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	cmacme "github.com/cert-manager/cert-manager/pkg/apis/acme/v1"
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	cmmeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type IssuerModifier func(v1.GenericIssuer)
@@ -92,6 +93,16 @@ func IssuerWithRandomName(prefix string, mods ...IssuerModifier) *v1.Issuer {
 func SetIssuerACME(a cmacme.ACMEIssuer) IssuerModifier {
 	return func(iss v1.GenericIssuer) {
 		iss.GetSpec().ACME = &a
+	}
+}
+
+func SetIssuerACMEPreferredChain(chain string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.ACME == nil {
+			spec.ACME = &cmacme.ACMEIssuer{}
+		}
+		spec.ACME.PreferredChain = chain
 	}
 }
 
@@ -296,6 +307,36 @@ func SetIssuerVaultCABundleSecretRef(name, namespace, key string) IssuerModifier
 		spec.Vault.CABundleSecretRef = &cmmeta.SecretKeySelector{
 			LocalObjectReference: cmmeta.LocalObjectReference{
 				Name: name,
+			},
+			Key: key,
+		}
+	}
+}
+
+func SetIssuerVaultClientCertSecretRef(vaultClientCertificateSecretName, key string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.Vault == nil {
+			spec.Vault = &v1.VaultIssuer{}
+		}
+		spec.Vault.ClientCertSecretRef = &cmmeta.SecretKeySelector{
+			LocalObjectReference: cmmeta.LocalObjectReference{
+				Name: vaultClientCertificateSecretName,
+			},
+			Key: key,
+		}
+	}
+}
+
+func SetIssuerVaultClientKeySecretRef(vaultClientCertificateSecretName, key string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.Vault == nil {
+			spec.Vault = &v1.VaultIssuer{}
+		}
+		spec.Vault.ClientKeySecretRef = &cmmeta.SecretKeySelector{
+			LocalObjectReference: cmmeta.LocalObjectReference{
+				Name: vaultClientCertificateSecretName,
 			},
 			Key: key,
 		}
