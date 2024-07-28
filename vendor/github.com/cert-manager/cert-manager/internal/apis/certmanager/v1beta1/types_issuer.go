@@ -216,6 +216,16 @@ type VaultIssuer struct {
 	// If no key for the Secret is specified, cert-manager will default to 'ca.crt'.
 	// +optional
 	CABundleSecretRef *cmmeta.SecretKeySelector `json:"caBundleSecretRef,omitempty"`
+
+	// Reference to a Secret containing a PEM-encoded Client Certificate to use when the
+	// Vault server requires mTLS.
+	// +optional
+	ClientCertSecretRef *cmmeta.SecretKeySelector `json:"clientCertSecretRef,omitempty"`
+
+	// Reference to a Secret containing a PEM-encoded Client Private Key to use when the
+	// Vault server requires mTLS.
+	// +optional
+	ClientKeySecretRef *cmmeta.SecretKeySelector `json:"clientKeySecretRef,omitempty"`
 }
 
 // Configuration used to authenticate with a Vault server.
@@ -291,6 +301,11 @@ type VaultKubernetesAuth struct {
 type ServiceAccountRef struct {
 	// Name of the ServiceAccount used to request a token.
 	Name string `json:"name"`
+
+	// TokenAudiences is an option list of extra audiences to include in the token passed to Vault. The default token
+	// consisting of the issuer's namespace and name is always included.
+	// +optional
+	TokenAudiences []string `json:"audiences,omitempty"`
 }
 
 type CAIssuer struct {

@@ -1271,6 +1271,7 @@ func autoConvert_v1alpha3_JKSKeystore_To_certmanager_JKSKeystore(in *JKSKeystore
 	if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
 	}
+	out.Alias = (*string)(unsafe.Pointer(in.Alias))
 	return nil
 }
 
@@ -1284,6 +1285,7 @@ func autoConvert_certmanager_JKSKeystore_To_v1alpha3_JKSKeystore(in *certmanager
 	if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(&in.PasswordSecretRef, &out.PasswordSecretRef, s); err != nil {
 		return err
 	}
+	out.Alias = (*string)(unsafe.Pointer(in.Alias))
 	return nil
 }
 
@@ -1414,6 +1416,7 @@ func Convert_certmanager_SelfSignedIssuer_To_v1alpha3_SelfSignedIssuer(in *certm
 
 func autoConvert_v1alpha3_ServiceAccountRef_To_certmanager_ServiceAccountRef(in *ServiceAccountRef, out *certmanager.ServiceAccountRef, s conversion.Scope) error {
 	out.Name = in.Name
+	out.TokenAudiences = *(*[]string)(unsafe.Pointer(&in.TokenAudiences))
 	return nil
 }
 
@@ -1424,6 +1427,7 @@ func Convert_v1alpha3_ServiceAccountRef_To_certmanager_ServiceAccountRef(in *Ser
 
 func autoConvert_certmanager_ServiceAccountRef_To_v1alpha3_ServiceAccountRef(in *certmanager.ServiceAccountRef, out *ServiceAccountRef, s conversion.Scope) error {
 	out.Name = in.Name
+	out.TokenAudiences = *(*[]string)(unsafe.Pointer(&in.TokenAudiences))
 	return nil
 }
 
@@ -1549,6 +1553,24 @@ func autoConvert_v1alpha3_VaultIssuer_To_certmanager_VaultIssuer(in *VaultIssuer
 	} else {
 		out.CABundleSecretRef = nil
 	}
+	if in.ClientCertSecretRef != nil {
+		in, out := &in.ClientCertSecretRef, &out.ClientCertSecretRef
+		*out = new(meta.SecretKeySelector)
+		if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ClientCertSecretRef = nil
+	}
+	if in.ClientKeySecretRef != nil {
+		in, out := &in.ClientKeySecretRef, &out.ClientKeySecretRef
+		*out = new(meta.SecretKeySelector)
+		if err := apismetav1.Convert_v1_SecretKeySelector_To_meta_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ClientKeySecretRef = nil
+	}
 	return nil
 }
 
@@ -1573,6 +1595,24 @@ func autoConvert_certmanager_VaultIssuer_To_v1alpha3_VaultIssuer(in *certmanager
 		}
 	} else {
 		out.CABundleSecretRef = nil
+	}
+	if in.ClientCertSecretRef != nil {
+		in, out := &in.ClientCertSecretRef, &out.ClientCertSecretRef
+		*out = new(metav1.SecretKeySelector)
+		if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ClientCertSecretRef = nil
+	}
+	if in.ClientKeySecretRef != nil {
+		in, out := &in.ClientKeySecretRef, &out.ClientKeySecretRef
+		*out = new(metav1.SecretKeySelector)
+		if err := apismetav1.Convert_meta_SecretKeySelector_To_v1_SecretKeySelector(*in, *out, s); err != nil {
+			return err
+		}
+	} else {
+		out.ClientKeySecretRef = nil
 	}
 	return nil
 }
