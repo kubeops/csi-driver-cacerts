@@ -67,8 +67,8 @@ OS   := $(if $(GOOS),$(GOOS),$(shell go env GOOS))
 ARCH := $(if $(GOARCH),$(GOARCH),$(shell go env GOARCH))
 
 # BASEIMAGE_PROD ?= gcr.io/distroless/static-debian12
-BASEIMAGE_PROD   ?= debian:bookworm
-BASEIMAGE_DBG    ?= debian:bookworm
+BASEIMAGE_PROD   ?= debian:12
+BASEIMAGE_DBG    ?= debian:12
 
 IMAGE            := $(REGISTRY)/$(BIN)
 VERSION_PROD     := $(VERSION)
