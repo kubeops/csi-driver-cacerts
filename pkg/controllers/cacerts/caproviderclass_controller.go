@@ -78,11 +78,16 @@ func (r *CAProviderClassReconciler) SetupWithManager(mgr ctrl.Manager) error {
 						continue
 					}
 
+					// Determine the namespace for secrets
 					ns = ref.Namespace
-					if ns == "" {
+					if ref.Kind == "ClusterIssuer" {
+						// If the reference is to a ClusterIssuer, we want to look for the secret in the cert-manager namespace
+						ns = "cert-manager" // Change this to the actual namespace where cert-manager is running
+					} else if ns == "" {
 						ns = p.Namespace
 					}
 
+					// Only enqueue if the namespaces match
 					if a.GetNamespace() != "" && a.GetNamespace() != ns {
 						continue
 					}
