@@ -358,6 +358,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"kmodules.xyz/client-go/api/v1.CAPIClusterInfo":                              schema_kmodulesxyz_client_go_api_v1_CAPIClusterInfo(ref),
 		"kmodules.xyz/client-go/api/v1.CertificatePrivateKey":                        schema_kmodulesxyz_client_go_api_v1_CertificatePrivateKey(ref),
 		"kmodules.xyz/client-go/api/v1.CertificateSpec":                              schema_kmodulesxyz_client_go_api_v1_CertificateSpec(ref),
+		"kmodules.xyz/client-go/api/v1.ClusterInfo":                                  schema_kmodulesxyz_client_go_api_v1_ClusterInfo(ref),
 		"kmodules.xyz/client-go/api/v1.ClusterMetadata":                              schema_kmodulesxyz_client_go_api_v1_ClusterMetadata(ref),
 		"kmodules.xyz/client-go/api/v1.Condition":                                    schema_kmodulesxyz_client_go_api_v1_Condition(ref),
 		"kmodules.xyz/client-go/api/v1.HealthCheckSpec":                              schema_kmodulesxyz_client_go_api_v1_HealthCheckSpec(ref),
@@ -18399,23 +18400,27 @@ func schema_kmodulesxyz_client_go_api_v1_CAPIClusterInfo(ref common.ReferenceCal
 				Properties: map[string]spec.Schema{
 					"provider": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"namespace": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 					"clusterName": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
 						},
 					},
 				},
+				Required: []string{"provider", "namespace", "clusterName"},
 			},
 		},
 	}
@@ -18482,7 +18487,7 @@ func schema_kmodulesxyz_client_go_api_v1_CertificateSpec(ref common.ReferenceCal
 					},
 					"renewBefore": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Certificate renew before expiration duration",
+							Description: "Certificate renew before expiration duration\n\nDeprecated use `ReconfigureTLS` type OpsRequest instead.",
 							Ref:         ref("k8s.io/apimachinery/pkg/apis/meta/v1.Duration"),
 						},
 					},
@@ -18561,6 +18566,55 @@ func schema_kmodulesxyz_client_go_api_v1_CertificateSpec(ref common.ReferenceCal
 	}
 }
 
+func schema_kmodulesxyz_client_go_api_v1_ClusterInfo(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "ClusterInfo used in ace-installer",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"uid": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"name": {
+						SchemaProps: spec.SchemaProps{
+							Default: "",
+							Type:    []string{"string"},
+							Format:  "",
+						},
+					},
+					"clusterManagers": {
+						SchemaProps: spec.SchemaProps{
+							Type: []string{"array"},
+							Items: &spec.SchemaOrArray{
+								Schema: &spec.Schema{
+									SchemaProps: spec.SchemaProps{
+										Default: "",
+										Type:    []string{"string"},
+										Format:  "",
+									},
+								},
+							},
+						},
+					},
+					"capi": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("kmodules.xyz/client-go/api/v1.CAPIClusterInfo"),
+						},
+					},
+				},
+				Required: []string{"uid", "name", "clusterManagers"},
+			},
+		},
+		Dependencies: []string{
+			"kmodules.xyz/client-go/api/v1.CAPIClusterInfo"},
+	}
+}
+
 func schema_kmodulesxyz_client_go_api_v1_ClusterMetadata(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -18611,6 +18665,18 @@ func schema_kmodulesxyz_client_go_api_v1_ClusterMetadata(ref common.ReferenceCal
 						},
 					},
 					"caBundle": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"managerID": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"hubClusterID": {
 						SchemaProps: spec.SchemaProps{
 							Type:   []string{"string"},
 							Format: "",

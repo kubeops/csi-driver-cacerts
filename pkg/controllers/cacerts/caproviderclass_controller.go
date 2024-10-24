@@ -22,7 +22,7 @@ import (
 	api "kubeops.dev/csi-driver-cacerts/apis/cacerts/v1alpha1"
 
 	cmapi "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	core "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -65,7 +65,7 @@ func (r *CAProviderClassReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			}
 			var req []reconcile.Request
 
-			var ns string
+			var refNamespace string
 			for _, p := range providers.Items {
 				for _, ref := range p.Spec.Refs {
 					var group string
@@ -78,12 +78,12 @@ func (r *CAProviderClassReconciler) SetupWithManager(mgr ctrl.Manager) error {
 						continue
 					}
 
-					ns = ref.Namespace
-					if ns == "" {
-						ns = p.Namespace
+					refNamespace = ref.Namespace
+					if refNamespace == "" && gk.Kind != "ClusterIssuer" {
+						refNamespace = p.Namespace
 					}
 
-					if a.GetNamespace() != "" && a.GetNamespace() != ns {
+					if a.GetNamespace() != "" && a.GetNamespace() != refNamespace {
 						continue
 					}
 
@@ -97,7 +97,7 @@ func (r *CAProviderClassReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&api.CAProviderClass{}).
-		Watches(&core.Secret{}, handler.EnqueueRequestsFromMapFunc(mf(schema.GroupKind{Group: "", Kind: "Secret"}))).
+		Watches(&corev1.Secret{}, handler.EnqueueRequestsFromMapFunc(mf(schema.GroupKind{Group: "", Kind: "Secret"}))).
 		Watches(&cmapi.Issuer{}, handler.EnqueueRequestsFromMapFunc(mf(schema.GroupKind{Group: cmapi.SchemeGroupVersion.Group, Kind: "Issuer"}))).
 		Watches(&cmapi.ClusterIssuer{}, handler.EnqueueRequestsFromMapFunc(mf(schema.GroupKind{Group: cmapi.SchemeGroupVersion.Group, Kind: "ClusterIssuer"}))).
 		Complete(r)
