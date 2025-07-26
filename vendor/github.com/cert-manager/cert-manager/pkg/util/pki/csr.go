@@ -19,7 +19,11 @@ package pki
 import (
 	"bytes"
 	"crypto"
+	"crypto/ecdsa"
+	"crypto/ed25519"
+	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/asn1"
@@ -260,11 +264,13 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 			return nil, fmt.Errorf("failed to build key usages: %w", err)
 		}
 
-		usage, err := MarshalKeyUsage(ku)
-		if err != nil {
-			return nil, fmt.Errorf("failed to asn1 encode usages: %w", err)
+		if ku != 0 {
+			usage, err := MarshalKeyUsage(ku)
+			if err != nil {
+				return nil, fmt.Errorf("failed to asn1 encode usages: %w", err)
+			}
+			extraExtensions = append(extraExtensions, usage)
 		}
-		extraExtensions = append(extraExtensions, usage)
 
 		// Only add extended usages if they are specified.
 		if len(ekus) > 0 {
@@ -296,7 +302,7 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 				return nil, err
 			}
 			nameConstraints.PermittedEmailAddresses = crt.Spec.NameConstraints.Permitted.EmailAddresses
-			nameConstraints.ExcludedURIDomains = crt.Spec.NameConstraints.Permitted.URIDomains
+			nameConstraints.PermittedURIDomains = crt.Spec.NameConstraints.Permitted.URIDomains
 		}
 
 		if crt.Spec.NameConstraints.Excluded != nil {
@@ -339,7 +345,44 @@ func GenerateCSR(crt *v1.Certificate, optFuncs ...GenerateCSROption) (*x509.Cert
 // key of the signer.
 // It returns a PEM encoded copy of the Certificate as well as a *x509.Certificate
 // which can be used for reading the encoded values.
-func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, publicKey crypto.PublicKey, signerKey interface{}) ([]byte, *x509.Certificate, error) {
+func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, publicKey crypto.PublicKey, signerKey any) ([]byte, *x509.Certificate, error) {
+	typedSigner, ok := signerKey.(crypto.Signer)
+	if !ok {
+		return nil, nil, fmt.Errorf("didn't get an expected Signer in call to SignCertificate")
+	}
+
+	var pubKeyAlgo x509.PublicKeyAlgorithm
+	var sigAlgoArg any
+
+	// NB: can't rely on issuerCert.Public or issuercert.PublicKeyAlgorithm being set reliably;
+	// but we know that signerKey.Public() will work!
+	switch pubKey := typedSigner.Public().(type) {
+	case *rsa.PublicKey:
+		pubKeyAlgo = x509.RSA
+
+		// Size is in bytes so multiply by 8 to get bits because they're more familiar
+		// This is technically not portable but if you're using cert-manager on a platform
+		// with bytes that don't have 8 bits, you've got bigger problems than this!
+		sigAlgoArg = pubKey.Size() * 8
+
+	case *ecdsa.PublicKey:
+		pubKeyAlgo = x509.ECDSA
+		sigAlgoArg = pubKey.Curve
+
+	case ed25519.PublicKey:
+		pubKeyAlgo = x509.Ed25519
+		sigAlgoArg = nil // ignored by signatureAlgorithmFromPublicKey
+
+	default:
+		return nil, nil, fmt.Errorf("unknown public key type on signing certificate: %T", issuerCert.PublicKey)
+	}
+
+	var err error
+	template.SignatureAlgorithm, err = signatureAlgorithmFromPublicKey(pubKeyAlgo, sigAlgoArg)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	derBytes, err := x509.CreateCertificate(rand.Reader, template, issuerCert, publicKey, signerKey)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating x509 certificate: %s", err.Error())
@@ -361,16 +404,16 @@ func SignCertificate(template *x509.Certificate, issuerCert *x509.Certificate, p
 
 // SignCSRTemplate signs a certificate template usually based upon a CSR. This
 // function expects all fields to be present in the certificate template,
-// including it's public key.
+// including its public key.
 // It returns the PEM bundle containing certificate data and the CA data, encoded in PEM format.
-func SignCSRTemplate(caCerts []*x509.Certificate, caKey crypto.Signer, template *x509.Certificate) (PEMBundle, error) {
+func SignCSRTemplate(caCerts []*x509.Certificate, caPrivateKey crypto.Signer, template *x509.Certificate) (PEMBundle, error) {
 	if len(caCerts) == 0 {
 		return PEMBundle{}, errors.New("no CA certificates given to sign CSR template")
 	}
 
 	issuingCACert := caCerts[0]
 
-	_, cert, err := SignCertificate(template, issuingCACert, template.PublicKey, caKey)
+	_, cert, err := SignCertificate(template, issuingCACert, template.PublicKey, caPrivateKey)
 	if err != nil {
 		return PEMBundle{}, err
 	}
@@ -432,55 +475,141 @@ func EncodeX509Chain(certs []*x509.Certificate) ([]byte, error) {
 	return caPem.Bytes(), nil
 }
 
+var keyAlgorithms = map[v1.PrivateKeyAlgorithm]x509.PublicKeyAlgorithm{
+	v1.RSAKeyAlgorithm:     x509.RSA,
+	v1.ECDSAKeyAlgorithm:   x509.ECDSA,
+	v1.Ed25519KeyAlgorithm: x509.Ed25519,
+}
+var sigAlgorithms = map[v1.SignatureAlgorithm]x509.SignatureAlgorithm{
+	v1.SHA256WithRSA:   x509.SHA256WithRSA,
+	v1.SHA384WithRSA:   x509.SHA384WithRSA,
+	v1.SHA512WithRSA:   x509.SHA512WithRSA,
+	v1.ECDSAWithSHA256: x509.ECDSAWithSHA256,
+	v1.ECDSAWithSHA384: x509.ECDSAWithSHA384,
+	v1.ECDSAWithSHA512: x509.ECDSAWithSHA512,
+	v1.PureEd25519:     x509.PureEd25519,
+}
+
 // SignatureAlgorithm will determine the appropriate signature algorithm for
 // the given certificate.
 // Adapted from https://github.com/cloudflare/cfssl/blob/master/csr/csr.go#L102
 func SignatureAlgorithm(crt *v1.Certificate) (x509.PublicKeyAlgorithm, x509.SignatureAlgorithm, error) {
-	var sigAlgo x509.SignatureAlgorithm
 	var pubKeyAlgo x509.PublicKeyAlgorithm
 	var specAlgorithm v1.PrivateKeyAlgorithm
+	var specKeySize int
+
 	if crt.Spec.PrivateKey != nil {
 		specAlgorithm = crt.Spec.PrivateKey.Algorithm
+		specKeySize = crt.Spec.PrivateKey.Size
 	}
-	switch specAlgorithm {
-	case v1.PrivateKeyAlgorithm(""):
-		// If keyAlgorithm is not specified, we default to rsa with keysize 2048
+
+	var sigAlgoArg any
+
+	var ok bool
+	if specAlgorithm == "" {
 		pubKeyAlgo = x509.RSA
-		sigAlgo = x509.SHA256WithRSA
-	case v1.RSAKeyAlgorithm:
-		pubKeyAlgo = x509.RSA
-		switch {
-		case crt.Spec.PrivateKey.Size >= 4096:
-			sigAlgo = x509.SHA512WithRSA
-		case crt.Spec.PrivateKey.Size >= 3072:
-			sigAlgo = x509.SHA384WithRSA
-		case crt.Spec.PrivateKey.Size >= 2048:
-			sigAlgo = x509.SHA256WithRSA
-		// 0 == not set
-		case crt.Spec.PrivateKey.Size == 0:
-			sigAlgo = x509.SHA256WithRSA
-		default:
-			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported rsa keysize specified: %d. min keysize %d", crt.Spec.PrivateKey.Size, MinRSAKeySize)
+	} else {
+		pubKeyAlgo, ok = keyAlgorithms[specAlgorithm]
+		if !ok {
+			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported algorithm specified: %s. should be either 'ecdsa', 'ed25519' or 'rsa", crt.Spec.PrivateKey.Algorithm)
 		}
-	case v1.Ed25519KeyAlgorithm:
-		pubKeyAlgo = x509.Ed25519
-		sigAlgo = x509.PureEd25519
-	case v1.ECDSAKeyAlgorithm:
-		pubKeyAlgo = x509.ECDSA
-		switch crt.Spec.PrivateKey.Size {
+	}
+
+	var sigAlgo x509.SignatureAlgorithm
+	if crt.Spec.SignatureAlgorithm != "" {
+		sigAlgo, ok = sigAlgorithms[crt.Spec.SignatureAlgorithm]
+		if !ok {
+			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported signature algorithm: %s", crt.Spec.SignatureAlgorithm)
+		}
+		return pubKeyAlgo, sigAlgo, nil
+	}
+
+	switch pubKeyAlgo {
+	case x509.RSA:
+		if specKeySize == 0 {
+			sigAlgoArg = MinRSAKeySize
+		} else {
+			sigAlgoArg = specKeySize
+		}
+	case x509.ECDSA:
+		switch specKeySize {
 		case 521:
-			sigAlgo = x509.ECDSAWithSHA512
+			sigAlgoArg = elliptic.P521()
 		case 384:
-			sigAlgo = x509.ECDSAWithSHA384
-		case 256:
-			sigAlgo = x509.ECDSAWithSHA256
-		case 0:
-			sigAlgo = x509.ECDSAWithSHA256
+			sigAlgoArg = elliptic.P384()
+		case 256, 0:
+			sigAlgoArg = elliptic.P256()
 		default:
 			return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported ecdsa keysize specified: %d", crt.Spec.PrivateKey.Size)
 		}
-	default:
-		return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, fmt.Errorf("unsupported algorithm specified: %s. should be either 'ecdsa' or 'rsa", crt.Spec.PrivateKey.Algorithm)
 	}
+
+	sigAlgo, err := signatureAlgorithmFromPublicKey(pubKeyAlgo, sigAlgoArg)
+	if err != nil {
+		return x509.UnknownPublicKeyAlgorithm, x509.UnknownSignatureAlgorithm, err
+	}
+
 	return pubKeyAlgo, sigAlgo, nil
+}
+
+// signatureAlgorithmFromPublicKey takes a public key type and an argument specific to that public
+// key, and returns an appropriate signature algorithm for that key.
+// If alg is x509.RSA, arg must be an integer key size in bits
+// If alg is x509.ECDSA, arg must be an elliptic.Curve
+// If alg is x509.Ed25519, arg is ignored
+// All other algorithms and args cause an error
+// The signature algorithms returned by this function are to some degree a matter of preference. The
+// choices here are motivated by what is common and what is required by bodies such as the US DoD.
+func signatureAlgorithmFromPublicKey(alg x509.PublicKeyAlgorithm, arg any) (x509.SignatureAlgorithm, error) {
+	var signatureAlgorithm x509.SignatureAlgorithm
+
+	switch alg {
+	case x509.RSA:
+		size, ok := arg.(int)
+		if !ok {
+			return x509.UnknownSignatureAlgorithm, fmt.Errorf("expected to get an integer key size for RSA key but got %T", arg)
+		}
+
+		switch {
+		case size >= 4096:
+			signatureAlgorithm = x509.SHA512WithRSA
+
+		case size >= 3072:
+			signatureAlgorithm = x509.SHA384WithRSA
+
+		case size >= 2048:
+			signatureAlgorithm = x509.SHA256WithRSA
+
+		default:
+			return x509.UnknownSignatureAlgorithm, fmt.Errorf("invalid size %d for RSA key on signing certificate", size)
+		}
+
+	case x509.ECDSA:
+		curve, ok := arg.(elliptic.Curve)
+		if !ok {
+			return x509.UnknownSignatureAlgorithm, fmt.Errorf("expected to get an ECDSA curve for ECDSA key but got %T", arg)
+		}
+
+		switch curve {
+		case elliptic.P521():
+			signatureAlgorithm = x509.ECDSAWithSHA512
+
+		case elliptic.P384():
+			signatureAlgorithm = x509.ECDSAWithSHA384
+
+		case elliptic.P256():
+			signatureAlgorithm = x509.ECDSAWithSHA256
+
+		default:
+			return x509.UnknownSignatureAlgorithm, fmt.Errorf("unknown / unsupported curve attached to ECDSA signing certificate")
+		}
+
+	case x509.Ed25519:
+		signatureAlgorithm = x509.PureEd25519
+
+	default:
+		return x509.UnknownSignatureAlgorithm, fmt.Errorf("got unsupported public key type when trying to calculate signature algorithm")
+	}
+
+	return signatureAlgorithm, nil
 }

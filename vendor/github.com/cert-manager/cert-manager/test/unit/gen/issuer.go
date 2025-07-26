@@ -125,6 +125,17 @@ func SetIssuerACMEEmail(email string) IssuerModifier {
 		spec.ACME.Email = email
 	}
 }
+
+func SetIssuerACMEProfile(profile string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.ACME == nil {
+			spec.ACME = &cmacme.ACMEIssuer{}
+		}
+		spec.ACME.Profile = profile
+	}
+}
+
 func SetIssuerACMEPrivKeyRef(privateKeyName string) IssuerModifier {
 	return func(iss v1.GenericIssuer) {
 		spec := iss.GetSpec()
@@ -268,6 +279,7 @@ func SetIssuerVault(v v1.VaultIssuer) IssuerModifier {
 		iss.GetSpec().Vault = &v
 	}
 }
+
 func SetIssuerVaultURL(url string) IssuerModifier {
 	return func(iss v1.GenericIssuer) {
 		spec := iss.GetSpec()
@@ -372,6 +384,19 @@ func SetIssuerVaultAppRoleAuth(keyName, approleName, roleId, path string) Issuer
 					Name: approleName,
 				},
 			},
+		}
+	}
+}
+
+func SetIssuerVaultClientCertificateAuth(path, secretName string) IssuerModifier {
+	return func(iss v1.GenericIssuer) {
+		spec := iss.GetSpec()
+		if spec.Vault == nil {
+			spec.Vault = &v1.VaultIssuer{}
+		}
+		spec.Vault.Auth.ClientCertificate = &v1.VaultClientCertificateAuth{
+			Path:       path,
+			SecretName: secretName,
 		}
 	}
 }

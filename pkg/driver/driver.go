@@ -52,7 +52,7 @@ func NewDriver(driverName, nodeID, endpoint string) *driver {
 	return d
 }
 
-func NewNodeServer(d *csicommon.CSIDriver, mgr ctrl.Manager, opts providers.IssuerOptions) *nodeServer {
+func NewNodeServer(d *csicommon.CSIDriver, mgr ctrl.Manager, opts providers.IssuerOptions) csi.NodeServer {
 	return &nodeServer{
 		DefaultNodeServer: csicommon.NewDefaultNodeServer(d),
 		mgr:               mgr,
