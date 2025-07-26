@@ -13,7 +13,7 @@
 # limitations under the License.
 
 FROM gcr.io/distroless/java AS java
-FROM centos AS centos
+FROM rockylinux/rockylinux:9.6 AS rockylinux
 
 FROM {ARG_FROM}
 
@@ -25,6 +25,6 @@ RUN set -x \
 
 ADD bin/{ARG_OS}_{ARG_ARCH}/{ARG_BIN} /{ARG_BIN}
 COPY --from=java /etc/ssl/certs/java/cacerts /etc/ssl/certs/java/cacerts
-COPY --from=centos /etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt /etc/ssl/certs/ca-bundle.trust.crt
+COPY --from=rockylinux /etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt /etc/ssl/certs/ca-bundle.trust.crt
 
 ENTRYPOINT ["/{ARG_BIN}"]
