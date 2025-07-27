@@ -38,7 +38,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/zeebo/xxh3"
 	"golang.org/x/net/context"
-	atomic_writer "gomodules.xyz/atomic-writer"
+	atomicwriter "gomodules.xyz/atomic-writer"
 	"gomodules.xyz/cert"
 	ksets "gomodules.xyz/sets/kubernetes"
 	"google.golang.org/grpc/codes"
@@ -154,10 +154,10 @@ func (ns *nodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 	podNamespace := req.GetVolumeContext()["csi.storage.k8s.io/pod.namespace"]
 
 	caProviderClasses := req.GetVolumeContext()["caProviderClasses"]
-	fmt.Println(caProviderClasses) // secret and ca cert names
+	// fmt.Println(caProviderClasses) // secret and ca cert names
 
 	osFamily := strings.ToLower(strings.TrimSpace(req.GetVolumeContext()["os"]))
-	fmt.Println(osFamily)
+	// fmt.Println(osFamily)
 	if osFamily == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "pod.spec.volumes[].csi.volumeAttributes.os must be set to one of [%s]", strings.Join(osFamilies.List(), ", "))
 	}
@@ -333,7 +333,7 @@ func updateCACerts(certs map[uint64]*x509.Certificate, osFamily OsFamily, srcDir
 		return err
 	}
 
-	payload := map[string]atomic_writer.FileProjection{}
+	payload := map[string]atomicwriter.FileProjection{}
 
 	switch osFamily {
 	case OsFamilyDebian, OsFamilyUbuntu, OsFamilyAlpine, OsFamilyOpensuse:
@@ -353,7 +353,7 @@ func updateCACerts(certs map[uint64]*x509.Certificate, osFamily OsFamily, srcDir
 			if err != nil {
 				return err
 			}
-			payload[name] = atomic_writer.FileProjection{Data: data, Mode: 0o444}
+			payload[name] = atomicwriter.FileProjection{Data: data, Mode: 0o444}
 		}
 	}
 
@@ -389,7 +389,7 @@ func updateCACerts(certs map[uint64]*x509.Certificate, osFamily OsFamily, srcDir
 					seq++
 					continue
 				}
-				payload[key] = atomic_writer.FileProjection{Data: pemBuf.Bytes(), Mode: 0o444}
+				payload[key] = atomicwriter.FileProjection{Data: pemBuf.Bytes(), Mode: 0o444}
 				break
 			}
 		}
@@ -401,31 +401,31 @@ func updateCACerts(certs map[uint64]*x509.Certificate, osFamily OsFamily, srcDir
 	if err != nil {
 		return err
 	}
-	certWriter, err := atomic_writer.NewAtomicWriter(targetDir, "cacerts-csi-driver")
+	certWriter, err := atomicwriter.NewAtomicWriter(targetDir, "cacerts-csi-driver")
 	if err != nil {
 		return err
 	}
 
-	var capayload map[string]atomic_writer.FileProjection
+	var capayload map[string]atomicwriter.FileProjection
 	switch osFamily {
 	case OsFamilyDebian, OsFamilyUbuntu, OsFamilyAlpine:
-		capayload = map[string]atomic_writer.FileProjection{
+		capayload = map[string]atomicwriter.FileProjection{
 			"ca-certificates.crt": {Data: caBuf.Bytes(), Mode: 0o444},
 			"java/cacerts":        {Data: javaBuf.Bytes(), Mode: 0o444},
 		}
 	case OsFamilyOpensuse:
-		capayload = map[string]atomic_writer.FileProjection{
+		capayload = map[string]atomicwriter.FileProjection{
 			"ca-bundle.pem": {Data: caBuf.Bytes(), Mode: 0o444},
 			"java-cacerts":  {Data: javaBuf.Bytes(), Mode: 0o444},
 		}
 	case OsFamilyFedora, OsFamilyCentos, OsFamilyOracleLinux, OsFamilyRockyLinux:
-		capayload = map[string]atomic_writer.FileProjection{
+		capayload = map[string]atomicwriter.FileProjection{
 			"pem/tls-ca-bundle.pem":       {Data: caBuf.Bytes(), Mode: 0o444},
 			"java/cacerts":                {Data: javaBuf.Bytes(), Mode: 0o444},
 			"openssl/ca-bundle.trust.crt": {Data: trsutData, Mode: 0o444},
 		}
 	case OsFamilyCentos6, OsFamilyOracleLinux6:
-		capayload = map[string]atomic_writer.FileProjection{
+		capayload = map[string]atomicwriter.FileProjection{
 			"tls/cert.pem":                                   {Data: caBuf.Bytes(), Mode: 0o444},
 			"tls/certs/ca-bundle.crt":                        {Data: caBuf.Bytes(), Mode: 0o444},
 			"ca-trust/extracted/pem/tls-ca-bundle.pem":       {Data: caBuf.Bytes(), Mode: 0o444},
