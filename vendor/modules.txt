@@ -265,6 +265,11 @@ github.com/onsi/gomega/types
 # github.com/opencontainers/go-digest v1.0.0
 ## explicit; go 1.13
 github.com/opencontainers/go-digest
+# github.com/opencontainers/selinux v1.12.0
+## explicit; go 1.19
+github.com/opencontainers/selinux/go-selinux
+github.com/opencontainers/selinux/go-selinux/label
+github.com/opencontainers/selinux/pkg/pwalkdir
 # github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
 ## explicit; go 1.17
 github.com/pavlo-v-chernykh/keystore-go/v4
@@ -976,7 +981,6 @@ k8s.io/klog/v2/internal/serialize
 k8s.io/klog/v2/internal/severity
 k8s.io/klog/v2/internal/sloghandler
 k8s.io/klog/v2/internal/verbosity
-k8s.io/klog/v2/klogr
 k8s.io/klog/v2/textlogger
 # k8s.io/kube-openapi v0.0.0-20241212222426-2c72e554b1e7
 ## explicit; go 1.21
@@ -1007,7 +1011,7 @@ k8s.io/utils/net
 k8s.io/utils/pointer
 k8s.io/utils/ptr
 k8s.io/utils/trace
-# kmodules.xyz/client-go v0.32.6
+# kmodules.xyz/client-go v0.32.9
 ## explicit; go 1.23.0
 kmodules.xyz/client-go
 kmodules.xyz/client-go/api/v1
@@ -1018,6 +1022,9 @@ kmodules.xyz/client-go/client/apiutil
 kmodules.xyz/client-go/core/v1
 kmodules.xyz/client-go/meta
 kmodules.xyz/client-go/tools/configreader
+# kmodules.xyz/selinux v0.1.0
+## explicit; go 1.24
+kmodules.xyz/selinux
 # sigs.k8s.io/controller-runtime v0.20.4 => github.com/kmodules/controller-runtime v0.20.3-0.20250221050548-8eabe54e7dda
 ## explicit; go 1.23.0
 sigs.k8s.io/controller-runtime

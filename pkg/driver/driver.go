@@ -22,6 +22,7 @@ import (
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"k8s.io/klog/v2"
+	"kmodules.xyz/selinux"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
@@ -57,6 +58,7 @@ func NewNodeServer(d *csicommon.CSIDriver, mgr ctrl.Manager, opts providers.Issu
 		DefaultNodeServer: csicommon.NewDefaultNodeServer(d),
 		mgr:               mgr,
 		opts:              opts,
+		translator:        selinux.NewSELinuxLabelTranslator(),
 	}
 }
 

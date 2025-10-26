@@ -1,17 +1,16 @@
 # cert-manager CSI Driver
 
 ```
-$ helm repo add jetstack https://charts.jetstack.io
-$ helm repo update
 $ helm upgrade -i \
-  cert-manager jetstack/cert-manager \
+  cert-manager oci://quay.io/jetstack/charts/cert-manager \
+  --version v1.18.2 \
   --namespace cert-manager \
   --create-namespace \
-  --version v1.15.1 \
   --set crds.enabled=true
 
 $ helm upgrade -i \
-  cert-manager-csi-driver jetstack/cert-manager-csi-driver \
+  cert-manager-csi-driver oci://quay.io/jetstack/charts/cert-manager-csi-driver \
+  --version v0.11.0 \
   -n cert-manager --wait
 
 $ kubectl create ns demo
@@ -122,3 +121,19 @@ dr-xr-xr-x 1 root root  20480 Oct 28 19:23 pem
 
 All files are in the BEGIN/END TRUSTED CERTIFICATE file format,
 as described in the x509(1) manual page.
+
+## Test on OpenShift
+
+```bash
+helm upgrade -i cert-manager-csi-driver-cacerts \
+  oci://ghcr.io/appscode-charts/cert-manager-csi-driver-cacerts \
+  --version v2025.8.31 \
+  --set distro.openshift=true \
+  --set driver.registry=appscodeci \
+  --set driver.tag=oc_linux_amd64 \
+  --set driver.pullPolicy=Always \
+  -n cert-manager --create-namespace --wait
+
+$ kubectl apply -f example/oc-curl-ubuntu.yaml
+$ kubectl apply -f example/oc-root-ubuntu.yaml
+```

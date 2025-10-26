@@ -1,0 +1,78 @@
+apiVersion: cacerts.csi.cert-manager.io/v1alpha1
+kind: CAProviderClass
+metadata:
+  name: ca-provider
+  namespace: demo
+spec:
+  refs:
+  - apiGroup: cert-manager.io
+    kind: Issuer
+    # namespace:
+    name: ca-issuer
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cacert-demo
+rules:
+- apiGroups: ["security.openshift.io"]
+  resources: ["securitycontextconstraints"]
+  resourceNames: ["anyuid"]
+  verbs: ["use"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cacert-demo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cacert-demo
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: demo
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: root-ubuntu
+  namespace: demo
+  # labels:
+  #   openshift.io/scc: anyuid
+spec:
+  containers:
+  - name: main
+    image: appscode/curl:ubuntu
+    command:
+    - sleep
+    - "3600"
+    volumeMounts:
+    - name: cacerts
+      mountPath: /etc/ssl/certs
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop: ["ALL"]
+      readOnlyRootFilesystem: true
+      runAsNonRoot: false
+      runAsUser: 0
+      seccompProfile:
+        type: RuntimeDefault
+  restartPolicy: Never
+  securityContext:
+    fsGroup: 0
+  volumes:
+  - name: cacerts
+    csi:
+      driver: cacerts.csi.cert-manager.io
+      readOnly: true
+      volumeAttributes:
+        os: ubuntu
+        caProviderClasses: ca-provider

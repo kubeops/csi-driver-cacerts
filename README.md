@@ -65,7 +65,7 @@ You can find more detailed examples in the examples folder.
 ```
 $ helm upgrade -i cert-manager-csi-driver-cacerts \
   oci://ghcr.io/appscode-charts/cert-manager-csi-driver-cacerts \
-  --version v2024.7.28 \
+  --version v2025.8.31 \
   -n cert-manager --create-namespace --wait
 ```
 
