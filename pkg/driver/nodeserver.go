@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -34,6 +35,7 @@ import (
 	"kubeops.dev/csi-driver-cacerts/pkg/providers"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
+	selib "github.com/opencontainers/selinux/go-selinux"
 	"github.com/pavlo-v-chernykh/keystore-go/v4"
 	"github.com/pkg/errors"
 	"github.com/zeebo/xxh3"
@@ -43,13 +45,16 @@ import (
 	ksets "gomodules.xyz/sets/kubernetes"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/sets"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
-	mount "k8s.io/mount-utils"
+	"k8s.io/mount-utils"
 	clientx "kmodules.xyz/client-go/client"
+	"kmodules.xyz/selinux"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // https://manuals.gfi.com/en/kerio/connect/content/server-configuration/ssl-certificates/adding-trusted-root-certificates-to-the-server-1605.html
@@ -123,6 +128,8 @@ type nodeServer struct {
 
 	mgr  ctrl.Manager
 	opts providers.IssuerOptions
+
+	translator selinux.SELinuxLabelTranslator
 }
 
 func (ns *nodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublishVolumeRequest) (*csi.NodePublishVolumeResponse, error) {
@@ -152,12 +159,42 @@ func (ns *nodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 	*/
 	podName := req.GetVolumeContext()["csi.storage.k8s.io/pod.name"]
 	podNamespace := req.GetVolumeContext()["csi.storage.k8s.io/pod.namespace"]
+	podUID := req.GetVolumeContext()["csi.storage.k8s.io/pod.uid"]
+
+	var seLinuxLabel string
+
+	if ns.translator.SELinuxEnabled() {
+		var pod core.Pod
+		err := ns.mgr.GetClient().Get(ctx, client.ObjectKey{Name: podName, Namespace: podNamespace}, &pod)
+		if err != nil {
+			return nil, err
+		}
+		if string(pod.UID) != podUID {
+			return nil, fmt.Errorf("pod UID mismatch, found %s, expected %s", pod.UID, podUID)
+		}
+
+		seLinuxContainerLabels := make([]*core.SELinuxOptions, 0, 1+len(pod.Spec.Containers)+len(pod.Spec.InitContainers))
+		if pod.Spec.SecurityContext != nil && pod.Spec.SecurityContext.SELinuxOptions != nil {
+			seLinuxContainerLabels = append(seLinuxContainerLabels, pod.Spec.SecurityContext.SELinuxOptions)
+		}
+		for _, c := range pod.Spec.Containers {
+			if c.SecurityContext != nil && c.SecurityContext.SELinuxOptions != nil {
+				seLinuxContainerLabels = append(seLinuxContainerLabels, c.SecurityContext.SELinuxOptions)
+			}
+		}
+		for _, c := range pod.Spec.InitContainers {
+			if c.SecurityContext != nil && c.SecurityContext.SELinuxOptions != nil {
+				seLinuxContainerLabels = append(seLinuxContainerLabels, c.SecurityContext.SELinuxOptions)
+			}
+		}
+		seLinuxLabel, err = selinux.GetMountSELinuxLabel(seLinuxContainerLabels, ns.translator)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	caProviderClasses := req.GetVolumeContext()["caProviderClasses"]
-	fmt.Println(caProviderClasses) // secret and ca cert names
-
 	osFamily := strings.ToLower(strings.TrimSpace(req.GetVolumeContext()["os"]))
-	fmt.Println(osFamily)
 	if osFamily == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "pod.spec.volumes[].csi.volumeAttributes.os must be set to one of [%s]", strings.Join(osFamilies.List(), ", "))
 	}
@@ -182,14 +219,32 @@ func (ns *nodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 			})
 		}
 	}
-	klog.InfoS("NodePublishVolume", "podName", podName, "podNamespace", podNamespace, "volume", req.GetVolumeId(), "key", providerNames.UnsortedList(), "stagingTargetPath", req.GetStagingTargetPath(), "targetPath", req.GetTargetPath())
 
 	targetPath := req.GetTargetPath()
 	notMnt, err := mount.New("").IsLikelyNotMountPoint(targetPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			if err = os.MkdirAll(targetPath, 0o555); err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
+			if seLinuxLabel == "" {
+				if err = os.MkdirAll(targetPath, 0o555); err != nil {
+					return nil, status.Error(codes.Internal, err.Error())
+				}
+			} else {
+				runtime.LockOSThread()
+				defer runtime.UnlockOSThread()
+
+				err = selib.SetFSCreateLabel(seLinuxLabel)
+				if err != nil {
+					return nil, err
+				}
+				defer func() {
+					err = selib.SetFSCreateLabel("")
+					if err != nil {
+						klog.ErrorS(err, "failed to reset fs create label")
+					}
+				}()
+				if err = os.Mkdir(targetPath, 0o555); err != nil {
+					return nil, status.Error(codes.Internal, err.Error())
+				}
 			}
 			notMnt = true
 		} else {
@@ -213,8 +268,20 @@ func (ns *nodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 	attrib := req.GetVolumeContext()
 	mountFlags := req.GetVolumeCapability().GetMount().GetMountFlags()
 
-	klog.V(4).Infof("target %v\nfstype %v\ndevice %v\nreadonly %v\nvolumeId %v\nattributes %v\n mountflags %v\n",
-		targetPath, fsType, deviceId, readOnly, volumeId, attrib, mountFlags)
+	klog.InfoS("NodePublishVolume",
+		"podName", podName,
+		"podNamespace", podNamespace,
+		"volume", req.GetVolumeId(),
+		"key", providerNames.UnsortedList(),
+		"stagingTargetPath", req.GetStagingTargetPath(),
+		"targetPath", targetPath,
+		"fstype", fsType,
+		"device", deviceId,
+		"readonly", readOnly,
+		"volumeId", volumeId,
+		"attributes", attrib,
+		"mountflags", mountFlags,
+		"SELinuxCcontext", seLinuxLabel)
 
 	/*
 		/etc/ssl/certs/java/cacerts
@@ -301,11 +368,13 @@ func updateCACerts(certs map[uint64]*x509.Certificate, osFamily OsFamily, srcDir
 	if err := ks.Load(f, javaCertStorePassword); err != nil {
 		return err
 	}
-	for _, alias := range ks.Aliases() {
-		if crt, err := ks.GetTrustedCertificateEntry(alias); err != nil {
-			return err
-		} else {
-			fmt.Printf("%s: %s %s\n", alias, crt.Certificate.Type, crt.CreationTime)
+	if klog.V(5).Enabled() {
+		for _, alias := range ks.Aliases() {
+			if crt, err := ks.GetTrustedCertificateEntry(alias); err != nil {
+				return err
+			} else {
+				klog.V(5).Infof("%s: %s %s", alias, crt.Certificate.Type, crt.CreationTime)
+			}
 		}
 	}
 	for _, certId := range certIds {

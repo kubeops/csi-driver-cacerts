@@ -26,12 +26,13 @@ import (
 	"kubeops.dev/csi-driver-cacerts/pkg/providers"
 
 	cmscheme "github.com/cert-manager/cert-manager/pkg/client/clientset/versioned/scheme"
+	core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/v2"
-	"k8s.io/klog/v2/klogr"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 )
 
@@ -65,7 +66,7 @@ func main() {
 	klog.InitFlags(nil)
 	flag.Parse()
 
-	ctrl.SetLogger(klogr.New()) // nolint:staticcheck
+	ctrl.SetLogger(klog.NewKlogr())
 
 	cfg := ctrl.GetConfigOrDie()
 	cfg.QPS = float32(*qps)
@@ -76,6 +77,13 @@ func main() {
 		HealthProbeBindAddress: "", // csi driver runs its own probe sidecar
 		LeaderElection:         false,
 		LeaderElectionID:       "4ab6f271.cacerts.csi.cert-manager.io",
+		Client: client.Options{
+			Cache: &client.CacheOptions{
+				DisableFor: []client.Object{
+					&core.Pod{},
+				},
+			},
+		},
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

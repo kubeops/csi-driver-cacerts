@@ -1,8 +1,6 @@
 module kubeops.dev/csi-driver-cacerts
 
-go 1.23.1
-
-toolchain go1.24.5
+go 1.24
 
 require (
 	github.com/cert-manager/cert-manager v1.18.2
@@ -12,6 +10,7 @@ require (
 	github.com/kubernetes-csi/csi-lib-utils v0.21.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.36.2
+	github.com/opencontainers/selinux v1.12.0
 	github.com/pavlo-v-chernykh/keystore-go/v4 v4.5.0
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.10.0
@@ -28,7 +27,8 @@ require (
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/kube-openapi v0.0.0-20241212222426-2c72e554b1e7
 	k8s.io/mount-utils v0.30.3
-	kmodules.xyz/client-go v0.32.6
+	kmodules.xyz/client-go v0.32.9
+	kmodules.xyz/selinux v0.1.0
 	sigs.k8s.io/controller-runtime v0.20.4
 	sigs.k8s.io/yaml v1.4.0
 )

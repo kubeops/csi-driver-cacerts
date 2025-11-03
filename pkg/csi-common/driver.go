@@ -58,6 +58,10 @@ func NewCSIDriver(name string, v string, nodeID string) *CSIDriver {
 	return &driver
 }
 
+func (d *CSIDriver) Name() string {
+	return d.name
+}
+
 func (d *CSIDriver) ValidateControllerServiceRequest(c csi.ControllerServiceCapability_RPC_Type) error {
 	if c == csi.ControllerServiceCapability_RPC_UNKNOWN {
 		return nil
