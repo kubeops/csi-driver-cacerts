@@ -1,0 +1,46 @@
+# Copyright AppsCode Inc. and Contributors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+FROM gcr.io/distroless/java AS java
+FROM rockylinux/rockylinux:9.6 AS rockylinux
+
+FROM {ARG_FROM}
+
+LABEL org.opencontainers.image.source="https://github.com/kubeops/csi-driver-cacerts" \
+    name="Cacerts CSI Drive" \
+    maintainer=AppsCode \
+    vendor=AppsCode \
+    version={ARG_TAG} \
+    release={ARG_TAG} \
+    summary="CSI driver that add ca certificates to a the OS trusted certificate issuers" \
+    description="CSI driver that add ca certificates to a the OS trusted certificate issuers"
+
+RUN mkdir -p /licenses
+COPY LICENSE /licenses/
+
+RUN set -x \
+  && microdnf update -y \
+  && microdnf install -y openssl tzdata \
+  && microdnf clean all
+
+ENV TZ=Etc/UTC
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+ADD bin/{ARG_OS}_{ARG_ARCH}/{ARG_BIN} /{ARG_BIN}
+COPY --from=java /etc/ssl/certs/java/cacerts /etc/ssl/certs/java/cacerts
+COPY --from=rockylinux /etc/pki/ca-trust/extracted/openssl/ca-bundle.trust.crt /etc/ssl/certs/ca-bundle.trust.crt
+
+# USER 65534
+
+ENTRYPOINT ["/{ARG_BIN}"]

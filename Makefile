@@ -69,13 +69,16 @@ ARCH := $(if $(GOARCH),$(GOARCH),$(shell go env GOARCH))
 # BASEIMAGE_PROD ?= gcr.io/distroless/static-debian12
 BASEIMAGE_PROD   ?= debian:12
 BASEIMAGE_DBG    ?= debian:12
+BASEIMAGE_UBI    ?= registry.access.redhat.com/ubi10/ubi-minimal
 
 IMAGE            := $(REGISTRY)/$(BIN)
 VERSION_PROD     := $(VERSION)
 VERSION_DBG      := $(VERSION)-dbg
+VERSION_UBI      := $(VERSION)-ubi
 TAG              := $(VERSION)_$(OS)_$(ARCH)
 TAG_PROD         := $(TAG)
 TAG_DBG          := $(VERSION)-dbg_$(OS)_$(ARCH)
+TAG_UBI          := $(VERSION)-ubi_$(OS)_$(ARCH)
 
 GO_VERSION       ?= 1.25
 BUILD_IMAGE      ?= ghcr.io/appscode/golang-dev:$(GO_VERSION)
@@ -97,6 +100,7 @@ BUILD_DIRS  := bin/$(OS)_$(ARCH)     \
 
 DOCKERFILE_PROD  = Dockerfile.in
 DOCKERFILE_DBG   = Dockerfile.dbg
+DOCKERFILE_UBI   = Dockerfile.ubi
 
 DOCKER_REPO_ROOT := /go/src/$(GO_PKG)/$(REPO)
 
@@ -301,15 +305,16 @@ $(OUTBIN): .go/$(OUTBIN).stamp
 # Used to track state in hidden files.
 DOTFILE_IMAGE    = $(subst /,_,$(IMAGE))-$(TAG)
 
-container: bin/.container-$(DOTFILE_IMAGE)-PROD bin/.container-$(DOTFILE_IMAGE)-DBG
+container: bin/.container-$(DOTFILE_IMAGE)-PROD bin/.container-$(DOTFILE_IMAGE)-DBG bin/.container-$(DOTFILE_IMAGE)-UBI
 ifeq (,$(SRC_REG))
 bin/.container-$(DOTFILE_IMAGE)-%: bin/$(OS)_$(ARCH)/$(BIN) $(DOCKERFILE_%)
 	@echo "container: $(IMAGE):$(TAG_$*)"
-	@sed                                    \
+	@sed                                  \
 		-e 's|{ARG_BIN}|$(BIN)|g'           \
 		-e 's|{ARG_ARCH}|$(ARCH)|g'         \
 		-e 's|{ARG_OS}|$(OS)|g'             \
 		-e 's|{ARG_FROM}|$(BASEIMAGE_$*)|g' \
+		-e 's|{ARG_TAG}|$(TAG)|g'           \
 		$(DOCKERFILE_$*) > bin/.dockerfile-$*-$(OS)_$(ARCH)
 	@docker buildx build --platform $(OS)/$(ARCH) --load --pull -t $(IMAGE):$(TAG_$*) -f bin/.dockerfile-$*-$(OS)_$(ARCH) .
 	@docker images -q $(IMAGE):$(TAG_$*) > $@
@@ -321,17 +326,17 @@ bin/.container-$(DOTFILE_IMAGE)-%:
 	@echo
 endif
 
-push: bin/.push-$(DOTFILE_IMAGE)-PROD bin/.push-$(DOTFILE_IMAGE)-DBG
+push: bin/.push-$(DOTFILE_IMAGE)-PROD bin/.push-$(DOTFILE_IMAGE)-DBG bin/.push-$(DOTFILE_IMAGE)-UBI
 bin/.push-$(DOTFILE_IMAGE)-%: bin/.container-$(DOTFILE_IMAGE)-%
 	@docker push $(IMAGE):$(TAG_$*)
 	@echo "pushed: $(IMAGE):$(TAG_$*)"
 	@echo
 
 .PHONY: docker-manifest
-docker-manifest: docker-manifest-PROD docker-manifest-DBG
+docker-manifest: docker-manifest-PROD docker-manifest-DBG docker-manifest-UBI
 docker-manifest-%:
-	docker manifest create -a $(IMAGE):$(VERSION_$*) $(foreach PLATFORM,$(DOCKER_PLATFORMS),$(IMAGE):$(VERSION_$*)_$(subst /,_,$(PLATFORM)))
-	docker manifest push $(IMAGE):$(VERSION_$*)
+	@docker manifest create -a $(IMAGE):$(VERSION_$*) $(foreach PLATFORM,$(DOCKER_PLATFORMS),$(IMAGE):$(VERSION_$*)_$(subst /,_,$(PLATFORM)))
+	@docker manifest push $(IMAGE):$(VERSION_$*)
 
 .PHONY: test
 test: unit-tests e2e-tests
