@@ -45,7 +45,7 @@ var (
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
-	fmt.Fprintf(GinkgoWriter, "Starting e2e suite\n")
+	fmt.Fprintf(GinkgoWriter, "Starting e2e suite") // nolint:errcheck
 	RunSpecs(t, "Controller Suite")
 }
 

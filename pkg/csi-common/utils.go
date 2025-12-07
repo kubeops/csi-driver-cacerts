@@ -17,12 +17,12 @@ limitations under the License.
 package csicommon
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/container-storage-interface/spec/lib/go/csi"
 	"github.com/kubernetes-csi/csi-lib-utils/protosanitizer"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"k8s.io/klog/v2"
 )
@@ -34,7 +34,7 @@ func ParseEndpoint(ep string) (string, string, error) {
 			return s[0], s[1], nil
 		}
 	}
-	return "", "", fmt.Errorf("Invalid endpoint: %v", ep)
+	return "", "", fmt.Errorf("invalid endpoint: %v", ep)
 }
 
 func NewVolumeCapabilityAccessMode(mode csi.VolumeCapability_AccessMode_Mode) *csi.VolumeCapability_AccessMode {
@@ -93,7 +93,7 @@ func RunControllerandNodePublishServer(endpoint string, d *CSIDriver, cs csi.Con
 	s.Wait()
 }
 
-func logGRPC(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+func logGRPC(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	klog.V(3).Infof("GRPC call: %s", info.FullMethod)
 	klog.V(5).Infof("GRPC request: %s", protosanitizer.StripSecrets(req))
 	resp, err := handler(ctx, req)

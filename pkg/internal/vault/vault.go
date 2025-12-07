@@ -127,7 +127,7 @@ func (v *Vault) CA() (ca []byte, err error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to sign certificate by vault: %s", err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 
 	return io.ReadAll(resp.Body)
 }
@@ -166,7 +166,7 @@ func (v *Vault) Sign(csrPEM []byte, duration time.Duration) (cert []byte, ca []b
 		return nil, nil, fmt.Errorf("failed to sign certificate by vault: %s", err)
 	}
 
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 
 	vaultResult := certutil.Secret{}
 	err = resp.DecodeJSON(&vaultResult)
@@ -309,7 +309,7 @@ func (v *Vault) requestTokenWithAppRoleRef(vc Client, appRole *cmapi.VaultAppRol
 		return "", fmt.Errorf("error logging in to Vault server: %s", err.Error())
 	}
 
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 
 	vaultResult := vault.Secret{}
 	if err := resp.DecodeJSON(&vaultResult); err != nil {
@@ -371,7 +371,7 @@ func (v *Vault) requestTokenWithKubernetesAuth(vc Client, kubernetesAuth *cmapi.
 		return "", fmt.Errorf("error calling Vault server: %s", err.Error())
 	}
 
-	defer resp.Body.Close()
+	defer resp.Body.Close() // nolint:errcheck
 	vaultResult := vault.Secret{}
 	err = resp.DecodeJSON(&vaultResult)
 	if err != nil {
@@ -420,7 +420,7 @@ func (v *Vault) IsVaultInitializedAndUnsealed() error {
 	healthResp, err := v.client.RawRequest(healthRequest)
 
 	if healthResp != nil {
-		defer healthResp.Body.Close()
+		defer healthResp.Body.Close() // nolint:errcheck
 	}
 
 	// 429 = if unsealed and standby
