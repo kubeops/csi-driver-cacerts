@@ -18,6 +18,7 @@ package driver
 
 import (
 	"bytes"
+	"context"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -39,7 +40,6 @@ import (
 	"github.com/pavlo-v-chernykh/keystore-go/v4"
 	"github.com/pkg/errors"
 	"github.com/zeebo/xxh3"
-	"golang.org/x/net/context"
 	atomic_writer "gomodules.xyz/atomic-writer"
 	"gomodules.xyz/cert"
 	ksets "gomodules.xyz/sets/kubernetes"
@@ -361,7 +361,7 @@ func updateCACerts(certs map[uint64]*x509.Certificate, osFamily OsFamily, srcDir
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer f.Close() // nolint:errcheck
 
 	ks := keystore.New()
 
