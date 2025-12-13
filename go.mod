@@ -26,7 +26,7 @@ require (
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/kube-openapi v0.0.0-20241212222426-2c72e554b1e7
 	k8s.io/mount-utils v0.30.3
-	kmodules.xyz/client-go v0.32.9
+	kmodules.xyz/client-go v0.32.11
 	kmodules.xyz/selinux v0.1.0
 	sigs.k8s.io/controller-runtime v0.20.4
 	sigs.k8s.io/yaml v1.4.0

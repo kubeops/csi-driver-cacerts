@@ -18,7 +18,7 @@ FROM rockylinux/rockylinux:9.6 AS rockylinux
 FROM {ARG_FROM}
 
 LABEL org.opencontainers.image.source="https://github.com/kubeops/csi-driver-cacerts" \
-    name="Cacerts CSI Drive" \
+    name="Cacerts CSI Driver" \
     maintainer=AppsCode \
     vendor=AppsCode \
     version={ARG_TAG} \
