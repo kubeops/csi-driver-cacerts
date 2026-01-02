@@ -48,6 +48,16 @@ jobs:
           docker login ghcr.io --username ${USERNAME} --password ${DOCKER_TOKEN}
           make release
 
+      - name: Publish to Red Hat Ecosystem Catalog
+        env:
+          REGISTRY: ghcr.io/appscode
+          PFLT_PYXIS_API_TOKEN: ${{ secrets.PFLT_PYXIS_API_TOKEN }}
+        run: |
+          curl -fsSL -o preflight https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/latest/download/preflight-linux-amd64
+          chmod +x preflight
+          sudo mv preflight /usr/local/bin/preflight
+          make docker-certify-redhat
+
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.event.ref, 'refs/tags/') && (contains(github.ref, '-alpha.') || contains(github.ref, '-beta.')) == false
