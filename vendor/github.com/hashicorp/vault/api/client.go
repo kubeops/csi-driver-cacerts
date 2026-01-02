@@ -70,6 +70,9 @@ const (
 	// SSRF protection.
 	RequestHeaderName = "X-Vault-Request"
 
+	SnapshotHeaderName          = "X-Vault-Recover-Snapshot-Id"
+	RecoverSourcePathHeaderName = "X-Vault-Recover-Source-Path"
+
 	TLSErrorString = "This error usually means that the server is running with TLS disabled\n" +
 		"but the client is configured to use TLS. Please either enable TLS\n" +
 		"on the server or run the client with -address set to an address\n" +
@@ -258,7 +261,7 @@ func DefaultConfig() *Config {
 		MinRetryWait: time.Millisecond * 1000,
 		MaxRetryWait: time.Millisecond * 1500,
 		MaxRetries:   2,
-		Backoff:      retryablehttp.LinearJitterBackoff,
+		Backoff:      retryablehttp.RateLimitLinearJitterBackoff,
 	}
 
 	transport := config.HttpClient.Transport.(*http.Transport)
@@ -1467,6 +1470,12 @@ START:
 	}
 
 	if outputCurlString {
+		// Note that although we're building this up here and returning it as an error object, the Error()
+		// interface method on it only gets called in a context where the actual string returned from that
+		// method is irrelevant, because it gets swallowed by an error buffer that's never output to the user.
+		// That's on purpose, not a bug, because in this case, OutputStringError is not really an _error_, per se.
+		// It's just a way of aborting the control flow so that requests don't actually execute, and instead,
+		// we can detect what's happened back in the CLI machinery and show the actual curl string to the user.
 		LastOutputStringError = &OutputStringError{
 			Request:       req,
 			TLSSkipVerify: c.config.HttpClient.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify,
