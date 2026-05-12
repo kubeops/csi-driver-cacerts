@@ -66,13 +66,17 @@ jobs:
           sudo mv bin/hub /usr/local/bin
           hub pr checkout $PR_NUMBER
 
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          registry: ghcr.io
+          username: 1gtm
+          password: ${{ secrets.LGTM_GITHUB_TOKEN }}
+
       - name: Build
         env:
-          REGISTRY: appscodeci
-          DOCKER_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
-          USERNAME: 1gtm
+          REGISTRY: ghcr.io/appscodeci
         run: |
-          docker login --username ${USERNAME} --password ${DOCKER_TOKEN}
           make push
 
   kubernetes:
