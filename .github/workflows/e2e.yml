@@ -16,7 +16,10 @@ concurrency:
 
 jobs:
   config:
-    if: contains(github.event.issue.html_url, '/pull/') && startsWith(github.event.comment.body, '/ok-to-test')
+    if: |
+      contains(github.event.issue.html_url, '/pull/') &&
+      startsWith(github.event.comment.body, '/ok-to-test') &&
+      (github.event.comment.author_association == 'OWNER' || github.event.comment.author_association == 'MEMBER')
     runs-on: ubuntu-24.04
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
