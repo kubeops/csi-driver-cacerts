@@ -239,7 +239,8 @@ func TestSign(t *testing.T) {
 
 		"a good csr but failed request should error": {
 			csrPEM: csrPEM,
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.Issuer(
+				"vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{}),
 			),
 			fakeClient:   vaultfake.NewFakeClient().WithRawRequest(nil, errors.New("request failed")),
@@ -250,7 +251,8 @@ func TestSign(t *testing.T) {
 
 		"a good csr and good response with no root should return a certificate with the intermediate in the chain and as the CA": {
 			csrPEM: csrPEM,
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.Issuer(
+				"vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{}),
 			),
 			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
@@ -265,7 +267,8 @@ func TestSign(t *testing.T) {
 
 		"a good csr and good response with a root should return a certificate without the root in the chain but with the root as the CA": {
 			csrPEM: csrPEM,
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.Issuer(
+				"vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{}),
 			),
 			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
@@ -280,7 +283,8 @@ func TestSign(t *testing.T) {
 
 		"vault issuer with namespace specified": {
 			csrPEM: csrPEM,
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.Issuer(
+				"vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{Namespace: "test"}),
 			),
 			fakeClient: vaultfake.NewFakeClient().WithRawRequest(&vault.Response{
@@ -403,7 +407,8 @@ func TestSetToken(t *testing.T) {
 	}
 	tests := map[string]testSetTokenT{
 		"if neither token secret ref, app role secret ref, or kube auth then not found then error": {
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.Issuer(
+				"vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
 					Auth:     cmapi.VaultAuth{},
@@ -418,7 +423,8 @@ func TestSetToken(t *testing.T) {
 		},
 
 		"if token secret ref is set but secret doesn't exist should error": {
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.Issuer(
+				"vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
 					Auth: cmapi.VaultAuth{
@@ -437,7 +443,8 @@ func TestSetToken(t *testing.T) {
 		},
 
 		"if token secret ref set, return client using token stored": {
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.Issuer(
+				"vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
 					Auth: cmapi.VaultAuth{
@@ -457,7 +464,8 @@ func TestSetToken(t *testing.T) {
 		},
 
 		"if app role set but secret token not but vault fails to return token, error": {
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.Issuer(
+				"vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
 					Auth: cmapi.VaultAuth{
@@ -480,7 +488,8 @@ func TestSetToken(t *testing.T) {
 		},
 
 		"if app role secret ref set, return client using token stored": {
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.Issuer(
+				"vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
 					Auth: cmapi.VaultAuth{
@@ -501,7 +510,8 @@ func TestSetToken(t *testing.T) {
 				Response: &http.Response{
 					Body: io.NopCloser(
 						strings.NewReader(
-							`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"my-roleapp-token"}}`),
+							`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"my-roleapp-token"}}`,
+						),
 					),
 				},
 			}, nil),
@@ -510,7 +520,8 @@ func TestSetToken(t *testing.T) {
 		},
 
 		"if kubernetes role auth set but reference secret doesn't exist return error": {
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.Issuer(
+				"vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
 					Auth: cmapi.VaultAuth{
@@ -533,7 +544,8 @@ func TestSetToken(t *testing.T) {
 		},
 
 		"if kubernetes role auth set but reference secret doesn't contain data at key error": {
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.Issuer(
+				"vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
 					Auth: cmapi.VaultAuth{
@@ -556,7 +568,8 @@ func TestSetToken(t *testing.T) {
 		},
 
 		"if kubernetes role auth set but errors with a raw request should error": {
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.Issuer(
+				"vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
 					Auth: cmapi.VaultAuth{
@@ -579,7 +592,8 @@ func TestSetToken(t *testing.T) {
 		},
 
 		"foo": {
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.Issuer(
+				"vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
 					Auth: cmapi.VaultAuth{
@@ -600,7 +614,8 @@ func TestSetToken(t *testing.T) {
 				Response: &http.Response{
 					Body: io.NopCloser(
 						strings.NewReader(
-							`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"my-token"}}`),
+							`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"my-token"}}`,
+						),
 					),
 				},
 			}, nil),
@@ -609,7 +624,8 @@ func TestSetToken(t *testing.T) {
 		},
 
 		"if app role secret ref and token secret set, take preference on token secret": {
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.Issuer(
+				"vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
 					Auth: cmapi.VaultAuth{
@@ -856,7 +872,8 @@ type testNewConfigT struct {
 func TestNewConfig(t *testing.T) {
 	tests := map[string]testNewConfigT{
 		"no CA bundle set in issuer should return nil": {
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.Issuer(
+				"vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
 					CABundle: nil,
 				}),
@@ -865,7 +882,8 @@ func TestNewConfig(t *testing.T) {
 		},
 
 		"a bad cert bundle should error": {
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.Issuer(
+				"vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
 					CABundle: []byte("a bad cert bundle"),
 				}),
@@ -874,7 +892,8 @@ func TestNewConfig(t *testing.T) {
 		},
 
 		"a good cert bundle should be added to the config": {
-			issuer: gen.Issuer("vault-issuer",
+			issuer: gen.Issuer(
+				"vault-issuer",
 				gen.SetIssuerVault(cmapi.VaultIssuer{
 					CABundle: []byte(testLeafCertificate),
 				}),
@@ -977,7 +996,8 @@ func TestRequestTokenWithAppRoleRef(t *testing.T) {
 					Response: &http.Response{
 						Body: io.NopCloser(
 							strings.NewReader(
-								`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{}}`),
+								`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{}}`,
+							),
 						),
 					},
 				}, nil,
@@ -994,7 +1014,8 @@ func TestRequestTokenWithAppRoleRef(t *testing.T) {
 					Response: &http.Response{
 						Body: io.NopCloser(
 							strings.NewReader(
-								`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"my-token"}}`),
+								`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"my-token"}}`,
+							),
 						),
 					},
 				}, nil,
@@ -1011,7 +1032,8 @@ func TestRequestTokenWithAppRoleRef(t *testing.T) {
 					Response: &http.Response{
 						Body: io.NopCloser(
 							strings.NewReader(
-								`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"my-token"},"auth":{"client_token":"my-client-token"}}`),
+								`{"request_id":"","lease_id":"","lease_duration":0,"renewable":false,"data":null,"warnings":null,"data":{"id":"my-token"},"auth":{"client_token":"my-client-token"}}`,
+							),
 						),
 					},
 				}, nil,
@@ -1029,7 +1051,8 @@ func TestRequestTokenWithAppRoleRef(t *testing.T) {
 			v := &Vault{
 				namespace: "test-namespace",
 				reader:    test.fakeLister,
-				issuer: gen.Issuer("vault-issuer",
+				issuer: gen.Issuer(
+					"vault-issuer",
 					gen.SetIssuerNamespace("namespace"),
 				),
 			}

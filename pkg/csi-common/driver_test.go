@@ -79,7 +79,8 @@ func TestValidateControllerServiceRequest(t *testing.T) {
 			csi.ControllerServiceCapability_RPC_PUBLISH_UNPUBLISH_VOLUME,
 			csi.ControllerServiceCapability_RPC_GET_CAPACITY,
 			csi.ControllerServiceCapability_RPC_LIST_VOLUMES,
-		})
+		},
+	)
 
 	// Test controller service publish/unpublish is supported
 	err = d.ValidateControllerServiceRequest(csi.ControllerServiceCapability_RPC_PUBLISH_UNPUBLISH_VOLUME)
