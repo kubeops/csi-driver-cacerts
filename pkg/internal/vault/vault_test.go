@@ -200,7 +200,8 @@ func signedCertificateSecret(issuingCaPEM string, caPEM ...string) *certutil.Sec
 	// See https://github.com/hashicorp/vault/blob/v1.5.0/builtin/logical/pki/path_issue_sign.go#L256
 	// See https://github.com/hashicorp/vault/blob/v1.5.5/sdk/helper/certutil/types.go#L627
 	if len(caPEM) > 0 {
-		chain := []string{issuingCaPEM}
+		chain := make([]string, 0, 1+len(caPEM))
+		chain = append(chain, issuingCaPEM)
 		chain = append(chain, caPEM...)
 		secret.Data["ca_chain"] = chain
 	}
