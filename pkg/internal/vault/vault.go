@@ -406,7 +406,8 @@ func extractCertificatesFromVaultCertificateSecret(secret *certutil.Secret) ([]b
 			vbundle.CAChain,
 			vbundle.IssuingCA,
 			vbundle.Certificate,
-		), "\n")))
+		), "\n"),
+	))
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to parse certificate chain from vault: %w", err)
 	}
