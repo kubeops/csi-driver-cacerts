@@ -1,7 +1,8 @@
-//go:build go1.24
+//go:build !linux
 
-/*-
- * Copyright 2014 Square Inc.
+/*
+ *
+ * Copyright 2026 gRPC authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +15,21 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package jose
+package readyreader
 
-import (
-	"crypto/pbkdf2"
-	"hash"
-)
+func isRawConnSupported() bool {
+	return false
+}
 
-func pbkdf2Key(h func() hash.Hash, password string, salt []byte, iter, keyLen int) ([]byte, error) {
-	return pbkdf2.Key(h, password, salt, iter, keyLen)
+// sysRead is not implemented. Support can be added in the future if necessary.
+func sysRead(uintptr, []byte) (int, error) {
+	panic("RawConn functionality is not implemented for non-unix platforms.")
+}
+
+// wouldBlock is not implemented. Support can be added in the future if necessary.
+func wouldBlock(error) bool {
+	panic("RawConn functionality is not implemented for non-unix platforms.")
 }
