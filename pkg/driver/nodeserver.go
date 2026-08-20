@@ -318,13 +318,32 @@ func (ns *nodeServer) NodeUnpublishVolume(_ context.Context, req *csi.NodeUnpubl
 		return nil, status.Error(codes.InvalidArgument, "Target path missing in request")
 	}
 
-	klog.InfoS("NodeUnpublishVolume: unmounting volume %s on %s", req.GetVolumeId(), targetPath)
+	klog.InfoS("NodeUnpublishVolume",
+		"volume", req.GetVolumeId(),
+		"targetPath", targetPath)
+
+	mounter := mount.New("")
+	mounted, err := mounter.IsMountPoint(targetPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return &csi.NodeUnpublishVolumeResponse{}, nil
+		}
+		return nil, status.Errorf(codes.Internal, "failed to inspect target path %q: %v", targetPath, err)
+	}
+
+	if mounted {
+		if err := mounter.Unmount(targetPath); err != nil {
+			return nil, status.Errorf(codes.Internal, "failed to unmount target path %q: %v", targetPath, err)
+		}
+	}
 
 	if err := os.RemoveAll(targetPath); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to remove target path %q: %v", targetPath, err)
 	}
 
-	klog.InfoS("NodeUnpublishVolume completed for volume %s on targetPath %s", req.GetVolumeId(), targetPath)
+	klog.InfoS("NodeUnpublishVolume completed",
+		"volume", req.GetVolumeId(),
+		"targetPath", targetPath)
 	return &csi.NodeUnpublishVolumeResponse{}, nil
 }
 
