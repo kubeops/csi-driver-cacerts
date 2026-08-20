@@ -330,7 +330,7 @@ func (ns *nodeServer) NodeUnpublishVolume(_ context.Context, req *csi.NodeUnpubl
 		}
 		return nil, status.Errorf(codes.Internal, "failed to inspect target path %q: %v", targetPath, err)
 	}
-
+	// For extra safety
 	if mounted {
 		if err := mounter.Unmount(targetPath); err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to unmount target path %q: %v", targetPath, err)
