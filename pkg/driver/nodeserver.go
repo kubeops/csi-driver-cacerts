@@ -308,7 +308,23 @@ func (ns *nodeServer) NodePublishVolume(ctx context.Context, req *csi.NodePublis
 	return &csi.NodePublishVolumeResponse{}, err
 }
 
-func (ns *nodeServer) NodeUnpublishVolume(ctx context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
+func (ns *nodeServer) NodeUnpublishVolume(_ context.Context, req *csi.NodeUnpublishVolumeRequest) (*csi.NodeUnpublishVolumeResponse, error) {
+	if len(req.GetVolumeId()) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "Volume ID missing in request")
+	}
+
+	targetPath := req.GetTargetPath()
+	if len(targetPath) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "Target path missing in request")
+	}
+
+	klog.InfoS("NodeUnpublishVolume: unmounting volume %s on %s", req.GetVolumeId(), targetPath)
+
+	if err := os.RemoveAll(targetPath); err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to remove target path %q: %v", targetPath, err)
+	}
+
+	klog.InfoS("NodeUnpublishVolume completed for volume %s on targetPath %s", req.GetVolumeId(), targetPath)
 	return &csi.NodeUnpublishVolumeResponse{}, nil
 }
 
