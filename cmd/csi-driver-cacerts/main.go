@@ -31,13 +31,10 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/klog/v2"
+	"kmodules.xyz/client-go/meta"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-)
-
-const (
-	defaultClusterResourceNamespace = "kube-system"
 )
 
 var (
@@ -51,7 +48,7 @@ var (
 	qps         = flag.Float64("qps", 100, "The maximum QPS to the master from this client")
 	burst       = flag.Int("burst", 100, "The maximum burst for throttle")
 
-	clusterResourceNamespace = flag.String("cluster-resource-namespace", defaultClusterResourceNamespace,
+	clusterResourceNamespace = flag.String("cluster-resource-namespace", meta.PodNamespace(),
 		"Namespace to store resources owned by cluster scoped resources such as ClusterIssuer in. "+
 			"This must be specified if ClusterIssuers are enabled.")
 )

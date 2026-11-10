@@ -28,12 +28,12 @@ import (
 	"gomodules.xyz/cert"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"
-	"kmodules.xyz/client-go/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type IssuerProvider struct {
 	Reader client.Reader
+	Opts   IssuerOptions
 }
 
 var _ lib.CAProvider = &IssuerProvider{}
@@ -56,16 +56,8 @@ func (c *IssuerProvider) GetCAs(obj client.Object, _ string) ([]*x509.Certificat
 
 	var secret corev1.Secret
 	secretRef := client.ObjectKey{
-		Namespace: func() string {
-			if kind == "ClusterIssuer" {
-				// cert-manager requires the ClusterIssuer ca secret to be in the same namespace where it is deployed.
-				// So, csi-driver must be in the same namespace where cert-manager is installed.
-				// ns will be defaulted to cert-manager namespace in standard deployments.
-				return meta.PodNamespace()
-			}
-			return issuer.GetNamespace()
-		}(),
-		Name: issuer.GetSpec().CA.SecretName,
+		Namespace: c.Opts.ResourceNamespace(issuer),
+		Name:      issuer.GetSpec().CA.SecretName,
 	}
 	err = c.Reader.Get(context.TODO(), secretRef, &secret)
 	if err != nil {

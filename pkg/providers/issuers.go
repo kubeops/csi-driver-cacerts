@@ -40,7 +40,7 @@ func NewCAProvider(c client.Client, opts IssuerOptions, ref api.ObjectRef, obj c
 		}
 		spec := issuer.GetSpec()
 		if spec.CA != nil {
-			return &IssuerProvider{Reader: c}, nil
+			return &IssuerProvider{Reader: c, Opts: opts}, nil
 		} else if spec.Vault != nil {
 			return NewVault(c, opts)
 		} else if spec.ACME != nil && spec.ACME.Server == LEStagingServerURL {
